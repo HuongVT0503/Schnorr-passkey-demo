@@ -5,6 +5,9 @@ import cookieParser from "cookie-parser";
 import { rateLimit } from "express-rate-limit";
 import { config } from "./config";
 
+import { prisma } from "./db/prisma";
+
+
 const app = express();
 
 //security headers
@@ -33,6 +36,18 @@ app.use("/api", apiLimiter);
 app.get("/api/health", (_req, res) => {  //!
   res.json({ ok: true, service: "schnorr-passkey-backend" });  //
 });
+
+//db check
+app.get("/api/db-check", async (_req, res) => {
+  try {
+    const userCount = await prisma.user.count();
+    res.json({ ok: true, userCount });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: "DB error" });
+  }
+});
+
 
 //fallback 404 if unknown /api routes
 app.use("/api", (_req, res) => {
