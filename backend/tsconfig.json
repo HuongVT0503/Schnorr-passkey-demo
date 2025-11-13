@@ -7,14 +7,14 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "CommonJS",//"nodenext",
+    "module": "commonjs",//"nodenext",
     "target": "ES2020",  //"esnext",
 
-     "moduleResolution": "Node16",
-    "types": [],                          //
+     "moduleResolution": "Node",
+    //"types": [],                          //
     // For nodejs:
-    // "lib": ["esnext"],
-    // "types": ["node"],
+    "lib": ["es2021"],
+    "types": ["node"],   //process
     // and npm install -D @types/node
 
     // Other Outputs
@@ -37,7 +37,7 @@
     // Recommended Options
     "strict": true,
     "jsx": "react-jsx",                   //
-    "verbatimModuleSyntax": true,          //
+    "verbatimModuleSyntax": false,          // remove ts5 restriction of the "top lvl export in cjs" error
     "isolatedModules": true,              //
     "noUncheckedSideEffectImports": true,    //
     "moduleDetection": "force",           //
