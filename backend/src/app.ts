@@ -7,6 +7,11 @@ import { config } from "./config";
 
 import { prisma } from "./db/prisma";
 
+import authRoutes from "./routes/auth";
+import meRoutes from "./routes/me";
+
+import { apiLimiter, authLimiter } from "./middleware/rateLimit";
+
 
 const app = express();
 
@@ -26,11 +31,15 @@ app.use(express.json());
 app.use(cookieParser());
 
 //rate limiting for ALL API routes
-const apiLimiter = rateLimit({
-  windowMs: 60_000,           //1min
-  max: 100
-});
+
+// const apiLimiter = rateLimit({
+//   windowMs: 60_000,           //1min
+//   max: 100
+// });
 app.use("/api", apiLimiter);
+app.use("/api/auth", authLimiter, authRoutes);
+//me/protected routes
+app.use("/api", meRoutes);
 
 //healthcheck endpoint
 app.get("/api/health", (_req, res) => {  //!

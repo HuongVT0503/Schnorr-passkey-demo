@@ -10,8 +10,10 @@ function requireEnv(name: string, fallback?: string): string {
 }
 
 export const config = {
-  port: parseInt(process.env.PORT || "4000", 10),
-  // For now, these are placeholders; will be used later in auth logic
+  port: parseInt(process.env.PORT ?? "4000", 10),
+  //placeholder for real DB
   rpId: requireEnv("RP_ID", "localhost"),
-  frontendOrigin: requireEnv("FRONTEND_ORIGIN", "http://localhost:5173")
+  frontendOrigin: requireEnv("FRONTEND_ORIGIN", "http://localhost:5173"),
+  sessionSecret: requireEnv("SESSION_SECRET"),
+  sessionLifetimeMs: 1000 * 60 * 60 * 24,   //1day
 };
