@@ -1,8 +1,10 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
+   
+    
     // File Layout
-    "rootDir": "./src",
+    "rootDir": ".", //not ./src so that the test files run
     "outDir": "./dist",
 
     // Environment Settings
@@ -14,7 +16,7 @@
     //"types": [],                          //
     // For nodejs:
     "lib": ["es2021"],
-    "types": ["node"],   //process
+    "types": ["node", "jest"],   //process
     // and npm install -D @types/node
 
     // Other Outputs
@@ -45,5 +47,5 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
   },
-   "include": ["src"]
+   "include": ["src", "test" ]
 }

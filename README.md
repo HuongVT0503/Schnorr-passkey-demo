@@ -72,3 +72,5 @@ You can learn more at https://aka.ms/tsconfig
 C:\Users\ADMIN\source\repos\Schnorr-passkey-demo>node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 2863040a0165fcaf092007e61dd563b6501cce3b98db49734537a5a3ae2c533a
 ->SESION_SECRET
+
+//robust request validation w Zod

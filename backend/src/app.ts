@@ -9,6 +9,7 @@ import { prisma } from "./db/prisma";
 
 import authRoutes from "./routes/auth";
 import meRoutes from "./routes/me";
+import debugRoutes from "./routes/_debug";
 
 import { apiLimiter, authLimiter } from "./middleware/rateLimit";
 
@@ -40,22 +41,27 @@ app.use("/api", apiLimiter);
 app.use("/api/auth", authLimiter, authRoutes);
 //me/protected routes
 app.use("/api", meRoutes);
+//debug
+//app.use("/_debug", debugRoutes);
+if (process.env.NODE_ENV !== "production") {
+  app.use("/_debug", debugRoutes);
+}
 
 //healthcheck endpoint
-app.get("/api/health", (_req, res) => {  //!
-  res.json({ ok: true, service: "schnorr-passkey-backend" });  //
-});
+// app.get("/api/health", (_req, res) => {  //!
+//   res.json({ ok: true, service: "schnorr-passkey-backend" });  //
+// });
 
-//db check
-app.get("/api/db-check", async (_req, res) => {
-  try {
-    const userCount = await prisma.user.count();
-    res.json({ ok: true, userCount });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ ok: false, error: "DB error" });
-  }
-});
+// //db check
+// app.get("/api/db-check", async (_req, res) => {
+//   try {
+//     const userCount = await prisma.user.count();
+//     res.json({ ok: true, userCount });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ ok: false, error: "DB error" });
+//   }
+// });
 
 
 //fallback 404 if unknown /api routes

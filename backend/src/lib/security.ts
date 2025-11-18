@@ -54,7 +54,31 @@ export function consumePending(id: string): PendingRecord | null {
   return rec;
 }
 
+
+
+//return a snapshot of current pending entries /for debug
+export function dumpPending(): Array<{//routes/_debug.ts
+  id: string;
+  userRef: string;
+  challenge: string;
+  expiresAt: string;
+  expired: boolean;
+}> {
+  const now = Date.now();
+  return Array.from(store.entries()).map(([id, p]) => ({
+    id,
+    userRef: p.userRef,
+    challenge: p.challenge,
+    expiresAt: new Date(p.exp).toISOString(),
+    expired: p.exp < now,
+  }));
+}
+
+
+
 //In /register/init:    createPending(username)
 //In /register/complete: consumePending(regId)
 //In /login/init:          createPending(user.id)
 //In /login/complete:      consumePending(loginId)
+//
+

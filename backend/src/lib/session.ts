@@ -12,6 +12,11 @@ type SessionPayload = {  //from db, jwt payload
 //the token is what putted in "session" cookie
 export async function createSession(userId: string): Promise<string> {
   const now = new Date();
+  //ensure sessionLifetimeMs valid
+  if (!Number.isFinite(config.sessionLifetimeMs) || config.sessionLifetimeMs <= 0) {
+    throw new Error("Invalid config.sessionLifetimeMs; must be positive integer (ms)");
+  }
+  
   const expiresAt = new Date(now.getTime() + config.sessionLifetimeMs);
 
   const session = await prisma.session.create({
