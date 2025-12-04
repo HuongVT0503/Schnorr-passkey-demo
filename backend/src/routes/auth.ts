@@ -8,6 +8,8 @@ import { createPending, consumePending } from "../lib/security";
 import { config } from "../config";
 import { ms } from "zod/v4/locales";
 
+//Zod is a TypeScript-first validation library that allows you to define schemas for data validation, ensuring type safety and integrity in your applications.
+
 
 const router = Router();
 

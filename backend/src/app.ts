@@ -52,7 +52,7 @@ if (process.env.NODE_ENV !== "production") {
 //   res.json({ ok: true, service: "schnorr-passkey-backend" });  //
 // });
 
-// //db check
+//db check
 // app.get("/api/db-check", async (_req, res) => {
 //   try {
 //     const userCount = await prisma.user.count();

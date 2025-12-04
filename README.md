@@ -1,5 +1,97 @@
 # Schnoor
 
+
+
+# Schnorr Passkey Demo
+
+A "Commercial Grade" demonstration of a custom authentication protocol mimicking WebAuthn, but implemented using pure Schnorr signatures (BIP-340) over secp256k1.
+
+## Architecture
+
+* **Protocol:** Custom Challenge-Response authentication.
+* **Cryptography:** Schnorr Signatures (BIP-340) via `@noble/secp256k1`.
+* **Backend:** Node.js (Express), TypeScript, Prisma (PostgreSQL).
+* **Frontend:** React (Vite), Axios.
+* **Security Features:**
+    * **Helmet:** Secure HTTP headers.
+    * **HttpOnly Cookies:** Session management immune to XSS.
+    * **Zod:** Strict runtime schema validation.
+    * **Rate Limiting:** Protection against brute-force attacks on auth endpoints.
+
+## Prerequisites
+
+* Node.js v18+
+* Docker & Docker Compose
+
+## Setup & Running
+
+1.  **Environment Setup**
+    Create a `.env` file in `./backend` (see `.env.example` or use defaults):
+    ```bash
+    PORT=4000
+    DATABASE_URL="postgresql://postgres:password@localhost:5432/schnorr_db?schema=public"
+    SESSION_SECRET="super_long_random_secret_string_change_this_in_prod"
+    RP_ID="localhost"
+    FRONTEND_ORIGIN="http://localhost:5173"
+    SESSION_LIFETIME_MS=86400000
+    ALLOW_INSECURE_SIGNATURES=0
+    ```
+
+2.  **Start Database**
+    ```bash
+    docker-compose up -d
+    ```
+
+3.  **Backend Setup**
+    ```bash
+    cd backend
+    npm install
+    
+    # Run Migrations (Create Tables)
+    npx prisma migrate dev --name init
+    
+    # Start API
+    npm run dev
+    ```
+
+4.  **Frontend Setup**
+    Open a new terminal.
+    ```bash
+    cd frontend
+    npm install
+    npm run dev
+    ```
+
+5.  **Access**
+    Go to `http://localhost:5173`. 
+    
+    * **Register:** Enter a username. The browser generates a Schnorr Keypair, signs a challenge, and registers the Public Key with the server.
+    * **Login:** Enter the username. The browser signs a new challenge using the stored Private Key. Server validates signature -> Sets HttpOnly Cookie.
+
+## Commercial Considerations & Limitations
+
+* **Key Storage:** This demo uses `localStorage` for private keys. In a banking-grade production environment, keys should be stored in the device's Secure Enclave (via WebAuthn API) or encrypted using a user-derived PIN (PBKDF2/Argon2).
+* **KDF:** The current Key Derivation Function is simplified. Production should use standard HKDF.
+* **Recovery:** Currently relies on the user saving the mnemonic.
+
+
+///later uses
+docker-compose up -d
+cd backend
+npm run dev
+//check db (inside backend)
+npx prisma studio
+
+
+//fe
+cd frontend
+cd frontend #critical, because i accidentally made 2 nested frontend folders and dont want to go through the hassle to change them
+npm run dev
+
+//id cmi1wkarg00009qmyjk09vxrk username alice pubkey deadbeef //degererated-unusable
+
+
+
 ///npm init -y
 C:\Users\ADMIN\source\repos\Schnoor-passkey-demo\backend>npm init -y
 Wrote to C:\Users\ADMIN\source\repos\Schnoor-passkey-demo\backend\package.json:

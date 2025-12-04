@@ -210,3 +210,6 @@ __marimo__/
 # Allow TypeScript backend lib folder
 !backend/src/lib/
 !backend/src/lib/**
+
+!frontend/frontend/src/lib/
+!frontend/frontend/src/lib/**
