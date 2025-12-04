@@ -17,9 +17,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "supertest": "^6.3.3",
     "@noble/curves": "^2.0.1",
-    "@noble/secp256k1": "^3.0.0",
+    "@noble/secp256k1": "^1.7.1",
     "@prisma/client": "^5.22.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -29,6 +28,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^5.0.0",
+    "supertest": "^6.3.3",
     "zod": "^4.1.12"
   },
   "devDependencies": {

@@ -67,7 +67,7 @@ const msgBytes = new TextEncoder().encode(pending.challenge + clientData.rpId);
     ok = true;
   } else {
     try {
-      ok = verifySchnorrSignature(pubKey, msgBytes, regSignature);//
+      ok = await verifySchnorrSignature(pubKey, msgBytes, regSignature);//
     } catch (err) {
       ok = false;
     }
@@ -128,7 +128,7 @@ const msgBytes = new TextEncoder().encode(pending.challenge + "auth" + config.rp
     ok = true;
   } else {
     try {
-      ok = verifySchnorrSignature(user.pubKey, msgBytes, signature);
+      ok = await verifySchnorrSignature(user.pubKey, msgBytes, signature);
     } catch {
       ok = false;
     }
