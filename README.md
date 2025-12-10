@@ -4,24 +4,68 @@
 
 # Schnorr Passkey Demo
 
-A "Commercial Grade" demonstration of a custom authentication protocol mimicking WebAuthn, but implemented using pure Schnorr signatures (BIP-340) over secp256k1.
+A commercial-grade demonstration of a custom "Passkey-like" authentication protocol implemented using **pure Schnorr Signatures** (BIP-340/secp256k1) rather than standard WebAuthn.
+
+[mimicking WebAuthn, but implemented using pure Schnorr signatures (BIP-340) over the secp256k1 curve.]
+
+This project replaces traditional passwords with cryptographic signatures, featuring mnemonic recovery, secure session management, and automatic data cleanup.
 
 ## Architecture
 
-* **Protocol:** Custom Challenge-Response authentication.
-* **Cryptography:** Schnorr Signatures (BIP-340) via `@noble/secp256k1`.
-* **Backend:** Node.js (Express), TypeScript, Prisma (PostgreSQL).
-* **Frontend:** React (Vite), Axios.
+### Tech Stack
+* **Backend**: Node.js, Express, TypeScript, PostgreSQL (Prisma).
+* **Frontend**: React, Vite, TailwindCSS, Axios.
+* **Cryptography**: `@noble/secp256k1` (Schnorr signatures for signing), `bip39` and `@noble/hashes`(PBKDF2/HMAC for Mnemonic generation/ Key Derivation).
+
+### Key Features
+1.  **Custom Challenge-Response Auth**: Replaces passwords with cryptographic signatures.
+2.  **Mnemonic Recovery**: Users generate a 12-word seed phrase to restore keys on new devices.
+3.  **Security Hardening**: HttpOnly cookies, Rate Limiting, Helmet headers, Zod.
+4.  **Auto-Cleanup**: User accounts are automatically deleted from the database after **24 hours**.
+
+
 * **Security Features:**
     * **Helmet:** Secure HTTP headers.
     * **HttpOnly Cookies:** Session management immune to XSS.
     * **Zod:** Strict runtime schema validation.
     * **Rate Limiting:** Protection against brute-force attacks on auth endpoints.
 
+
+## 🔄 Data Flow & Logic
+
+### 1. Registration (The "Enrollment")
+1.  **Init**: Frontend sends `username` to Backend.
+2.  **Challenge**: Backend generates a random 32-byte `challenge` (nonce) and stores it temporarily in memory (expires in 5m).
+3.  **Key Gen (Frontend)**:
+    * Generates a 12-word BIP-39 **Mnemonic** (displayed to user).
+    * Derives a **Private Key** using `HMAC-SHA256(Seed, Username + RP_ID)`.
+    * Derives the **Public Key**.
+4.  **Sign**: Frontend signs `(Challenge + RP_ID)` using the Private Key.
+5.  **Verify (Backend)**: Backend verifies the Schnorr signature against the Public Key.
+6.  **Store**: If valid, the backend saves the `username` and `publicKey` to PostgreSQL.
+
+### 2. Login (The "Authentication")
+1.  **Init**: Frontend sends `username`.
+2.  **Challenge**: Backend looks up the user, generates a `challenge`, and sends it back.
+3.  **Sign**: Frontend loads the Private Key from `localStorage`.
+    * It signs `(Challenge + "auth" + RP_ID)`.
+    * *Note: The "auth" string prevents signature replay attacks between registration and login contexts.*
+4.  **Verify**: Backend verifies the signature against the stored Public Key in the DB.
+5.  **Session**: Backend issues a secure, HTTP-only `session` cookie (JWT).
+
+### 3. Recovery (Device Loss)
+1.  User enters `username` and their saved **Mnemonic**.
+2.  Frontend re-runs the derivation logic: `HMAC-SHA256(MnemonicSeed, Username + RP_ID)`.
+3.  The resulting Private Key is mathematically identical to the original.
+4.  Frontend proceeds with the standard Login flow using this restored key.
+
+---
+
+
 ## Prerequisites
 
 * Node.js v18+
-* Docker & Docker Compose
+* Docker & Docker Compose (for PostgreSQL)
 
 ## Setup & Running
 
@@ -47,20 +91,22 @@ A "Commercial Grade" demonstration of a custom authentication protocol mimicking
     cd backend
     npm install
     
-    # Run Migrations (Create Tables)
+    # Run Migrations (Create db Tables)
     npx prisma migrate dev --name init
     
     # Start API
     npm run dev
     ```
+Server runs on port 4000.
 
 4.  **Frontend Setup**
     Open a new terminal.
     ```bash
-    cd frontend
+    cd frontend/frontend
     npm install
     npm run dev
     ```
+Client runs on http://localhost:5173
 
 5.  **Access**
     Go to `http://localhost:5173`. 
@@ -88,7 +134,6 @@ cd frontend
 cd frontend #critical, because i accidentally made 2 nested frontend folders and dont want to go through the hassle to change them
 npm run dev
 
-//id cmi1wkarg00009qmyjk09vxrk username alice pubkey deadbeef //degererated-unusable
 
 
 

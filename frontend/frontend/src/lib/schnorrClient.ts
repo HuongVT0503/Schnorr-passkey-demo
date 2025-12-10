@@ -1,3 +1,5 @@
+//PROVER
+//wallet/key manager
 // frontend/src/lib/schnorrClient.ts
 import * as secp from "@noble/secp256k1";
 import { sha256 } from "@noble/hashes/sha256";

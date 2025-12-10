@@ -1,3 +1,4 @@
+//VERIFIER
 //serversidde lib
 import * as secp from "@noble/secp256k1"; //import the whole module// namespace import
 //import { schnorr } from "@noble/secp256k1";//named export

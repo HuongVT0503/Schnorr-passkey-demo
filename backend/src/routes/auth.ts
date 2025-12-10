@@ -140,12 +140,20 @@ const msgBytes = new TextEncoder().encode(pending.challenge + "auth" + config.rp
   // secure cookie options: ensure secure:true in prod (https)
   res.cookie("session", token, {
     httpOnly: true,
+    //->prevents XSS attacks . BUT it makes the cookie inaccessible from JS so the browser would hold the valid session cookie even after logging out
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     path: "/",
     maxAge: config.sessionLifetimeMs,
   });
 
+  return res.json({ ok: true });
+});
+
+
+//logout
+router.post("/logout", async (_req, res) => {
+  res.clearCookie("session", { path: "/" });
   return res.json({ ok: true });
 });
 

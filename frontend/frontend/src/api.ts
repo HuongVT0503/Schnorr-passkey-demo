@@ -51,5 +51,10 @@ export const authApi = {
     api.post('/auth/login/complete', data),
 
   // Session
-  getMe: () => api.get('/me')
+  getMe: () => api.get('/me'),
+
+  logout: () => api.post('/auth/logout'),
+
+  //delete user
+  deleteAccount: () => api.delete('/me')  
 };
