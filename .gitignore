@@ -135,6 +135,8 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+.env.local
+.env.*
 .env
 .envrc
 .venv
@@ -213,3 +215,73 @@ __marimo__/
 
 !frontend/frontend/src/lib/
 !frontend/frontend/src/lib/**
+
+
+
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+
+
+
+# --- Dependencies ---
+node_modules/
+
+# "backend/dist" folder full of .js and .map files
+backend/dist/
+
+# --- Frontend Build Artifacts ---
+# Standard Vite/React build output
+frontend/frontend/dist/
+frontend/frontend/build/
+
+# --- Logs and Temporary Files ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+
+# Session cookies/data should never be committed
+cookies.txt
+
+# --- OS & Editor Generated Files ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Coverage Reports (If you run Jest coverage) ---
+coverage/
+
+# --- Specific Redundant Files (From your tree) ---
+# This looks like a large text dump of your code, not source code
+full_project_code.txt
+dump.py
+tree.py
+
+
