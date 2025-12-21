@@ -17,7 +17,7 @@ Unlike standard WebAuthn (which only allows authentication), this protocol uses 
 The Private Key is never stored. It is mathematically reconstructed on-demand:
 
 $$\text{Seed} = \text{Authenticator.PRF}(\text{Salt}, \text{UserBiometrics})$$
-$$\text{PrivKey} = \text{SHA256}(\text{Seed} + \text{Username} + \text{RP\_ID})$$
+$$\text{PrivKey} = \text{SHA256}(\text{Seed} + \text{Username} + \text{RP\\_ID})$$
 
 ### The Workflow
 1.  **User Trigger:** User clicks "Login" and scans their finger/face.
