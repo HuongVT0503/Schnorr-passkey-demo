@@ -2,19 +2,20 @@ import { useAuth } from '../context/AuthContext';
 
 //delete btn
 import { authApi } from '../api';
-import { clearKey } from '../lib/schnorrClient';
+//import { clearKey } from '../lib/schnorrClient';
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
 
   //handle del
   const handleDelete = async () => {
-    if (!confirm("Are you sure? This will delete your account and private key permanently.")) {
+    if (!confirm("Are you sure? This will delete your account from the server permanently.")) {
       return;
     }
     try {
-      await authApi.deleteAccount();
-      clearKey(); //local priv key
+      await authApi.deleteAccount(); //del user from db
+      //clearKey(); //local priv key
+
       window.location.href = '/login';
     } catch (err) {
       alert("Failed to delete account");

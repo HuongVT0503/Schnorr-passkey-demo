@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { authApi } from "../api";
 import { useAuth } from "../context/AuthContext";
-import { loadKey, signMessage } from "../lib/schnorrClient";
+import { prfToSeed, deriveKeyFromPrf, signMessage } from "../lib/schnorrClient";
+import { startAuthentication } from "@simplewebauthn/browser";
+
+const PRF_SALT = "Fixed_Salt_For_Demo"; //matches registration salt
 
 //shape of the login init response
 interface LoginInitResponse {
@@ -27,21 +30,58 @@ export default function LoginPage() {
     setStatus("Initializing Login...");
 
     try {
-      const privKey = loadKey();
-      if (!privKey) throw new Error("No passkey found on this device.");
-
       //init
       const initRes = await authApi.loginInit(username);
       const { loginId, challenge } = initRes.data as LoginInitResponse;
 
-      //sign
+      setStatus("Veryfying Identity...");
+
+      //WEBAUTHN AUTHENTICATION WITH PRF
+      //ask browser to "decrypt" the secret using the same salt
+      const authResponse = await startAuthentication({
+        optionsJSON: {
+          challenge: challenge,
+          rpId: window.location.hostname,
+          allowCredentials: [], //empty =Discoverable Credential
+          userVerification: "required",
+          //REQUEST FOR PRF
+          extensions: {
+            prf: {
+              eval: {
+                first: new TextEncoder().encode(PRF_SALT),
+              },
+            },
+          },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any,
+      });
+
+      //extract seed -> Re-derive PRF key
+      const clientExtensionResults = authResponse.clientExtensionResults;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const prfResult = (clientExtensionResults as any).prf;
+
+      if (!prfResult || !prfResult.results) {
+        throw new Error("Could not recover secret from hardware.");
+      }
+
+      //re-derive
+      const seedHex = prfToSeed(prfResult.results);
+      const privKey = await deriveKeyFromPrf(
+        seedHex,
+        username,
+        window.location.hostname
+      );
+
+      //sign & send
       //matches backend logic (challenge + "auth" + rpId)
       const rpId = window.location.hostname;
       const msg = challenge + "auth" + rpId;
       const sig = await signMessage(privKey, msg);
 
       //
-      setStatus("Verifying Proof...");
+      setStatus("Wait for Server to Verify Proof...");
+
       await authApi.loginComplete({
         loginId,
         username,
@@ -60,33 +100,38 @@ export default function LoginPage() {
   return (
     <form
       onSubmit={doLogin}
-      className="bg-gray-800 p-6 rounded w-full max-w-md"
+      className="bg-gray-800 p-6 rounded w-full max-w-md border border-green-900/50"
     >
-      <h2 className="text-xl mb-4">Authenticate</h2>
+      <h2 className="text-xl mb-4 text-green-400 font-bold">
+        Login (Hardware)
+      </h2>
+      <p className="text-xs text-gray-400 mb-4">
+        Authenticate using your device's biometrics to reconstruct your keys.
+      </p>
+
       <input
-        className="w-full bg-gray-700 p-2 mb-4 rounded border border-gray-600 focus:border-blue-500 outline-none"
+        className="w-full bg-gray-700 p-3 mb-4 rounded border border-gray-600 focus:border-green-500 outline-none text-white"
         placeholder="Username"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
+        autoFocus
       />
-      <button className="w-full bg-green-600 hover:bg-green-500 py-2 rounded mb-4 transition-colors">
-        Login with Passkey
+
+      <button className="w-full bg-green-600 hover:bg-green-500 py-3 rounded mb-4 transition-colors font-bold text-white shadow-lg">
+        Scan Fingerprint / FaceID
       </button>
 
-      {status && <div className="text-yellow-400 text-sm mb-4">{status}</div>}
+      {status && (
+        <div className="text-yellow-400 text-sm mb-4 bg-yellow-900/20 p-2 rounded">
+          {status}
+        </div>
+      )}
 
       <div className="text-center text-sm text-gray-500">
         <div>
           Need an account?{" "}
           <Link to="/register" className="text-blue-400 hover:underline">
             Register
-          </Link>
-        </div>
-
-        <div>
-          Lost your device?{" "}
-          <Link to="/recovery" className="text-blue-400 hover:underline">
-            Recover Account
           </Link>
         </div>
       </div>

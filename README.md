@@ -1,296 +1,135 @@
-# Schnoor
 
+# Schnorr Hybrid-Passkey Demo
 
+**A High-Assurance Authentication Protocol fusing WebAuthn PRF with Schnorr Signatures.**
 
-# Schnorr Passkey Demo
+This project demonstrates a cutting-edge **"Hybrid" authentication architecture**. Instead of storing private keys in vulnerable browser storage (`localStorage`), it uses the **WebAuthn PRF (Pseudo-Random Function)** extension to derive deterministic Schnorr keys directly from the user's hardware authenticator (Touch ID, Windows Hello, YubiKey).
 
-A commercial-grade demonstration of a custom "Passkey-like" authentication protocol implemented using **pure Schnorr Signatures** (BIP-340/secp256k1) rather than standard WebAuthn.
-
-[mimicking WebAuthn, but implemented using pure Schnorr signatures (BIP-340) over the secp256k1 curve.]
-
-This project replaces traditional passwords with cryptographic signatures, featuring mnemonic recovery, secure session management, and automatic data cleanup.
-
-## Architecture
-
-### Tech Stack
-* **Backend**: Node.js, Express, TypeScript, PostgreSQL (Prisma).
-* **Frontend**: React, Vite, TailwindCSS, Axios.
-* **Cryptography**: `@noble/secp256k1` (Schnorr signatures for signing), `bip39` and `@noble/hashes`(PBKDF2/HMAC for Mnemonic generation/ Key Derivation).
-
-### Key Features
-1.  **Custom Challenge-Response Auth**: Replaces passwords with cryptographic signatures.
-2.  **Mnemonic Recovery**: Users generate a 12-word seed phrase to restore keys on new devices.
-3.  **Security Hardening**: HttpOnly cookies, Rate Limiting, Helmet headers, Zod.
-4.  **Auto-Cleanup**: User accounts are automatically deleted from the database after **24 hours**.
-
-
-* **Security Features:**
-    * **Helmet:** Secure HTTP headers.
-    * **HttpOnly Cookies:** Session management immune to XSS.
-    * **Zod:** Strict runtime schema validation.
-    * **Rate Limiting:** Protection against brute-force attacks on auth endpoints.
-
-
-## 🔄 Data Flow & Logic
-
-### 1. Registration (The "Enrollment")
-1.  **Init**: Frontend sends `username` to Backend.
-2.  **Challenge**: Backend generates a random 32-byte `challenge` (nonce) and stores it temporarily in memory (expires in 5m).
-3.  **Key Gen (Frontend)**:
-    * Generates a 12-word BIP-39 **Mnemonic** (displayed to user).
-    * Derives a **Private Key** using `HMAC-SHA256(Seed, Username + RP_ID)`.
-    * Derives the **Public Key**.
-4.  **Sign**: Frontend signs `(Challenge + RP_ID)` using the Private Key.
-5.  **Verify (Backend)**: Backend verifies the Schnorr signature against the Public Key.
-6.  **Store**: If valid, the backend saves the `username` and `publicKey` to PostgreSQL.
-
-### 2. Login (The "Authentication")
-1.  **Init**: Frontend sends `username`.
-2.  **Challenge**: Backend looks up the user, generates a `challenge`, and sends it back.
-3.  **Sign**: Frontend loads the Private Key from `localStorage`.
-    * It signs `(Challenge + "auth" + RP_ID)`.
-    * *Note: The "auth" string prevents signature replay attacks between registration and login contexts.*
-4.  **Verify**: Backend verifies the signature against the stored Public Key in the DB.
-5.  **Session**: Backend issues a secure, HTTP-only `session` cookie (JWT).
-
-### 3. Recovery (Device Loss)
-1.  User enters `username` and their saved **Mnemonic**.
-2.  Frontend re-runs the derivation logic: `HMAC-SHA256(MnemonicSeed, Username + RP_ID)`.
-3.  The resulting Private Key is mathematically identical to the original.
-4.  Frontend proceeds with the standard Login flow using this restored key.
+> **Why this matters:** This allows web apps to perform custom cryptographic operations (like signing Blockchain transactions or end-to-end encrypted messages) while maintaining the seamless UX of a standard Passkey login.
 
 ---
 
+## Architecture: The "Hybrid PRF" Flow
 
-## Prerequisites
+Unlike standard WebAuthn (which only allows authentication), this protocol uses the authenticator as a **Hardware Seed Generator**.
 
+### The Math
+The Private Key is never stored. It is mathematically reconstructed on-demand:
+
+$$\text{Seed} = \text{Authenticator.PRF}(\text{Salt}, \text{UserBiometrics})$$
+$$\text{PrivKey} = \text{SHA256}(\text{Seed} + \text{Username} + \text{RP\_ID})$$
+
+### The Workflow
+1.  **User Trigger:** User clicks "Login" and scans their finger/face.
+2.  **Hardware Action:** The Secure Enclave/TPM verifies the biometric and releases a unique **PRF Secret** to the browser.
+3.  **Derivation:** The frontend derives a temporary **Schnorr Private Key** (secp256k1) from that secret.
+4.  **Authentication:** The frontend signs a server challenge with the Schnorr Key.
+5.  **Cleanup:** The Private Key is immediately wiped from memory. **Nothing is saved to disk.**
+
+---
+
+## Key Features
+
+* **Zero-Storage Security:** No private keys are ever stored in `localStorage`, `sessionStorage`, or `IndexedDB`. If a hacker steals the laptop, they cannot steal the key.
+* **Biometric Native:** Uses native OS authenticators (Touch ID on macOS, Windows Hello, Android Biometrics).
+* **Schnorr Signatures:** Implements BIP-340 compatible signatures (standard for Bitcoin/Nostr) rather than standard ECDSA.
+* **XSS Resistance:** Even if an attacker injects a script, they cannot extract the key without the user physically touching the sensor at that exact moment.
+* **Auto-Cleanup:** Server automatically purges stale accounts after 24 hours (Demo Mode).
+
+---
+
+## Tech Stack
+
+### Frontend
+* **Framework:** React 19 + Vite + TypeScript
+* **Cryptography:** `@noble/secp256k1` (Schnorr), `@simplewebauthn/browser` (WebAuthn/PRF)
+* **Styling:** TailwindCSS
+
+### Backend
+* **Runtime:** Node.js + Express
+* **Database:** PostgreSQL 16 (via Docker)
+* **ORM:** Prisma
+* **Validation:** Zod
+* **Security:** Helmet, Rate-Limiting, HttpOnly Cookies (JWT)
+
+---
+
+## Setup & Installation
+
+### Prerequisites
 * Node.js v18+
-* Docker & Docker Compose (for PostgreSQL)
+* Docker & Docker Compose
+* **Browser:** Chrome, Edge, or Safari (macOS Sonoma+). *Firefox PRF support is currently experimental.*
+* **Hardware:** A device with a biometric sensor (Touch ID, Windows Hello) or a YubiKey 5 series.
 
-## Setup & Running
-
-1.  **Environment Setup**
-    Create a `.env` file in `./backend` (see `.env.example` or use defaults):
-    ```bash
-    PORT=4000
-    DATABASE_URL="postgresql://postgres:password@localhost:5432/schnorr_db?schema=public"
-    SESSION_SECRET="super_long_random_secret_string_change_this_in_prod"
-    RP_ID="localhost"
-    FRONTEND_ORIGIN="http://localhost:5173"
-    SESSION_LIFETIME_MS=86400000
-    ALLOW_INSECURE_SIGNATURES=0
-    ```
-
-2.  **Start Database**
-    ```bash
-    docker-compose up -d
-    ```
-
-3.  **Backend Setup**
-    ```bash
-    cd backend
-    npm install
-    
-    # Run Migrations (Create db Tables)
-    npx prisma migrate dev --name init
-    
-    # Start API
-    npm run dev
-    ```
-Server runs on port 4000.
-
-4.  **Frontend Setup**
-    Open a new terminal.
-    ```bash
-    cd frontend/frontend
-    npm install
-    npm run dev
-    ```
-Client runs on http://localhost:5173
-
-5.  **Access**
-    Go to `http://localhost:5173`. 
-    
-    * **Register:** Enter a username. The browser generates a Schnorr Keypair, signs a challenge, and registers the Public Key with the server.
-    * **Login:** Enter the username. The browser signs a new challenge using the stored Private Key. Server validates signature -> Sets HttpOnly Cookie.
-
-## Commercial Considerations & Limitations
-
-* **Key Storage:** This demo uses `localStorage` for private keys. In a banking-grade production environment, keys should be stored in the device's Secure Enclave (via WebAuthn API) or encrypted using a user-derived PIN (PBKDF2/Argon2).
-* **KDF:** The current Key Derivation Function is simplified. Production should use standard HKDF.
-* **Recovery:** Currently relies on the user saving the mnemonic.
-
-
-///later uses
+### 1. Database Setup
+Start the PostgreSQL container:
+```bash
 docker-compose up -d
+```
+
+### 2. Backend Setup
+```bash
 cd backend
+npm install
+
+# Run Migrations
+npx prisma migrate dev --name init
+
+# Start API (Runs on port 4000)
 npm run dev
-//check db (inside backend)
-npx prisma studio
-
-
-//fe
-cd frontend
-cd frontend #critical, because i accidentally made 2 nested frontend folders and dont want to go through the hassle to change them
-npm run dev
-
-
-
-
-///npm init -y
-C:\Users\ADMIN\source\repos\Schnoor-passkey-demo\backend>npm init -y
-Wrote to C:\Users\ADMIN\source\repos\Schnoor-passkey-demo\backend\package.json:
-
-{
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "cookie-parser": "^1.4.7",      
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "express-rate-limit": "^8.2.1", 
-    "helmet": "^8.1.0"
-  },
-  "devDependencies": {}
-}
-
-//runtime dependencies
-///npm install express helmet cors cookie-parser express-rate-limit dotenv
-
-C:\Users\ADMIN\source\repos\Schnoor-passkey-demo\backend>npm install express helmet cors cookie-parser express-rate-limit dotenv
-
-up to date, audited 77 packages in 2s
-
-18 packages are looking for funding 
-  run `npm fund` for details        
-
-found 0 vulnerabilities
-
-C:\Users\ADMIN\source\repos\Schnoor-passkey-demo\backend>
-
-///dev dependencies
-////npm install -D typescript ts-node-dev @types/node @types/express @types/cookie-parser
-C:\Users\ADMIN\source\repos\Schnoor-passkey-demo\backend>npm install -D typescript ts-node-dev @types/node@@types/express @types/cookie-parser  
-npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
-npm warn deprecated rimraf@2.7.1: Rimraf versions prior to v4 are no longer supported
-npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
-
-added 73 packages, and audited 150 packages in 8s
-
-26 packages are looking for funding 
-  run `npm fund` for details        
-
-found 0 vulnerabilities
-
-
-//create tsconfig.json
-///npx tsc --init
-C:\Users\ADMIN\source\repos\Schnoor-passkey-demo\backend>npx tsc --init
-
-Created a new tsconfig.json         
-                                 TS 
-You can learn more at https://aka.ms/tsconfig
-
-
-
-
-
-////
-C:\Users\ADMIN\source\repos\Schnorr-passkey-demo>node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-2863040a0165fcaf092007e61dd563b6501cce3b98db49734537a5a3ae2c533a
-->SESION_SECRET
-
-//robust request validation w Zod'''''''''''
-
-
-
-
-
-
-
-
-
-
-# React + TypeScript + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 3. Frontend Setup
+Open a new terminal:
+```bash
+cd frontend/frontend
+npm install
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Start Client (Runs on http://localhost:5173)
+npm run dev
 ```
+## Usage Guide
+
+### 1. Access: 
+Open http://localhost:5173 (Must be localhost or https for WebAuthn to work).
+
+### 2. Registration:
+
+Enter a username.
+
+Click "Create Secure Passkey".
+
+Browser prompt appears: "Verify your identity".
+
+Scan finger. The account is created.
+
+### 3. Login:
+
+Enter the username.
+
+Click "Scan Fingerprint".
+
+The system reconstructs your keys and logs you in.
+
+### 4. Dashboard:
+
+View your session status.
+
+Logout (clears HttpOnly cookie).
+
+Delete Account (wipes data from DB).
+
+
+## Limitations
+## 1. Salt Management: 
+This demo uses a fixed salt string. In production, a unique salt should be generated per user and stored in the database to prevent cross-account key collisions.
+
+## 2. Recovery: 
+If the hardware authenticator is lost, the account is unrecoverable. Production apps should implement "Multi-Device" PRF sync or a backup recovery key flow.
+
+## Credits 
+
+Schnorr Logic via @noble/secp256k1
+
+WebAuthn Handling via @simplewebauthn

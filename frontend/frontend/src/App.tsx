@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from "../src/pages/Login";
 import RegisterPage from './pages/Register';
 import DashboardPage from './pages/Dashboard';
-import RecoveryPage from './pages/Recovery';
+//import RecoveryPage from './pages/Recovery';
 
 
 //wrapper for protected routes
@@ -41,7 +41,7 @@ export default function App() {
             <Route element={<PublicRoute />}>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              <Route path="/recovery" element={<RecoveryPage />} />
+              
               {/* Default redirect to login */}
               <Route path="/" element={<Navigate to="/login" />} />
             </Route>
