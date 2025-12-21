@@ -133,3 +133,6 @@ If the hardware authenticator is lost, the account is unrecoverable. Production 
 Schnorr Logic via @noble/secp256k1
 
 WebAuthn Handling via @simplewebauthn
+
+# must demo in lastest Google Chrome version browser, and the windows must have created windows hello. Because WebAuthn PRF is so new, it  is not supported to be sent via QR from another (mobile) device. Also, using Edge instead of Chrome, or an old version of Chrome, may lead to hardware blockage. I know not anyone have a YubiKey, personally I myself don't have one. =))
+# will add a fallback safety net purely for the purpose of demostrating the workflow
