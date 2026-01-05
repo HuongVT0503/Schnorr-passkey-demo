@@ -17,7 +17,7 @@ Unlike standard WebAuthn (which only allows authentication), this protocol uses 
 The Private Key is never stored. It is mathematically reconstructed on-demand:
 
 $$\text{Seed} = \text{Authenticator.PRF}(\text{Salt}, \text{UserBiometrics})$$
-$$\text{PrivKey} = \text{SHA256}(\text{Seed} + \text{Username} + \text{RP\_ID})$$
+$$\text{PrivKey} = \text{SHA256}(\text{Seed} + \text{Username} + \text{RP\\_ID})$$
 
 ### The Workflow
 1.  **User Trigger:** User clicks "Login" and scans their finger/face.
@@ -136,3 +136,4 @@ WebAuthn Handling via @simplewebauthn
 
 # must demo in lastest Google Chrome version browser, and the windows must have created windows hello. Because WebAuthn PRF is so new, it  is not supported to be sent via QR from another (mobile) device. Also, using Edge instead of Chrome, or an old version of Chrome, may lead to hardware blockage. I know not anyone have a YubiKey, personally I myself don't have one. =))
 # will add a fallback safety net purely for the purpose of demostrating the workflow
+# RECOMMENDED TO USE WEITH GG PASSKEY AS IT IS MUCH MORE STABLE, ALSO DOESNT LEAVE THE BROWSER
