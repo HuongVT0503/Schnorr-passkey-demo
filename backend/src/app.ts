@@ -16,6 +16,8 @@ import path from "path";
 
 const app = express();
 
+app.set("trust proxy", 1); //trust first proxy (railways load balancer) 
+
 //security headers
 app.use(helmet());
 
