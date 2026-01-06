@@ -12,7 +12,7 @@ import meRoutes from "./routes/me";
 import debugRoutes from "./routes/_debug";
 
 import { apiLimiter, authLimiter } from "./middleware/rateLimit";
-
+import path from "path";
 
 const app = express();
 
@@ -68,6 +68,20 @@ if (process.env.NODE_ENV !== "production") {
 app.use("/api", (_req, res) => {
   res.status(404).json({ error: "Not found" });
 });
+
+
+//serve static files from fe build folder, 
+//point to fe build folder
+const frontendPath = path.join(__dirname, "../../frontend/frontend/dist");
+app.use(express.static(frontendPath));
+
+//catch all
+// for requests not handled by /api, send index.html
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
+
+
 
 //error handler
 app.use(
