@@ -2,11 +2,11 @@
   "name": "schnorr-passkey-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "build:full": "ls -la .. && ls -la ../frontend && npm install && npm install --prefix ../frontend/frontend && npm run build --prefix ../frontend/frontend && npm run build",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
