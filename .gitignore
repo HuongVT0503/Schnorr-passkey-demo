@@ -66,8 +66,6 @@ Thumbs.db
 *.swp
 
 
-# --- Specific Redundant Files (From your tree) ---
-# This looks like a large text dump of your code, not source code
 full_project_code.txt
 dump.py
 tree.py

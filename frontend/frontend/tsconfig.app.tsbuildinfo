@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/api.ts","./src/main.tsx","./src/context/authcontext.tsx","./src/lib/schnorrclient.ts","./src/pages/dashboard.tsx","./src/pages/login.tsx","./src/pages/register.tsx","./src/types/webauthn.d.ts"],"version":"5.9.3"}
