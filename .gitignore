@@ -1,6 +1,6 @@
 # --- Dependencies (Frontend & Backend) ---
 node_modules/
-package-lock.json
+#package-lock.json
 # Note: Keep package-lock.json if you want deterministic builds, 
 # but ignore it if you find it causes conflicts in this specific "under construction" phase. 
 # usually checking in package-lock.json is recommended.
@@ -24,8 +24,7 @@ frontend/frontend/dist/
 frontend/frontend/build/
 
 # --- Temporary / Generated Files ---
-# This is the massive text dump you generated, we shouldn't track this
-full_project_code.txt
+coverage/
 
 # --- Python Utilities (Root) ---
 # We KEEP tree.py and dump.py, but ignore cache and compiled python
