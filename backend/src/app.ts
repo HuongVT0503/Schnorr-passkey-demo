@@ -77,7 +77,7 @@ app.use(express.static(frontendPath));
 
 //catch all
 // for requests not handled by /api, send index.html
-app.get("*", (req, res) => {
+app.get("(.*)", (req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
