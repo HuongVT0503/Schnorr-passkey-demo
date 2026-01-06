@@ -72,7 +72,7 @@ app.use("/api", (_req, res) => {
 
 //serve static files from fe build folder, 
 //point to fe build folder
-const frontendPath = path.join(__dirname, "../../frontend/frontend/dist");
+const frontendPath = path.join(__dirname, "../public");
 app.use(express.static(frontendPath));
 
 //catch all

@@ -7,7 +7,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/src/index.js",
-    "build:full": "ls -la .. && ls -la ../frontend && npm install && npm install --prefix ../frontend/frontend && npm run build --prefix ../frontend/frontend && npm run build",
+    "build:full": "npm install && npm install --prefix ../frontend/frontend && npm run build --prefix ../frontend/frontend && npm run build && mkdir -p dist/public && cp -r ../frontend/frontend/dist/* dist/public/",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "test": "jest",
