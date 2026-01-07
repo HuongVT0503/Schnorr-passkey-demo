@@ -57,7 +57,7 @@ $$\text{PrivKey} = \text{SHA256}(\text{Seed} + \text{Username} + \text{RP\\_ID})
 ## Setup & Installation
 
 ### Prerequisites
-* Node.js v18+
+* Node.js v18+ (20)
 * Docker & Docker Compose
 * **Browser:** Chrome, Edge, or Safari (macOS Sonoma+). *Firefox PRF support is currently experimental.*
 * **Hardware:** A device with a biometric sensor (Touch ID, Windows Hello) or a YubiKey 5 series.

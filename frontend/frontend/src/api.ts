@@ -56,5 +56,15 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
 
   //delete user
-  deleteAccount: () => api.delete('/me')  
+  deleteAccount: () => api.delete('/me'),
+  
+
+  //Linking
+  initLink: () => api.post('/link/init'), //return{ url, expiresAt }
+  
+  getLinkInfo: (linkId: string) => api.get(`/link/info/${linkId}`),
+  
+  completeLink: (data: { linkId: string, newPubKey: string, signature: string, challenge: string, deviceName: string }) => 
+    api.post('/link/complete', data),
+
 };

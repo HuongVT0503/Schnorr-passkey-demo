@@ -13,6 +13,7 @@ import debugRoutes from "./routes/_debug";
 
 import { apiLimiter, authLimiter } from "./middleware/rateLimit";
 import path from "path";
+import linkRoutes from "./routes/link";
 
 const app = express();
 
@@ -43,6 +44,9 @@ app.use("/api", apiLimiter);
 app.use("/api/auth", authLimiter, authRoutes);
 //me/protected routes
 app.use("/api", meRoutes);
+
+app.use("/api/link", linkRoutes); //link routes//recover
+
 //debug
 //app.use("/_debug", debugRoutes);
 if (process.env.NODE_ENV !== "production") {
