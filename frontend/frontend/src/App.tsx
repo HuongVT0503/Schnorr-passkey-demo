@@ -42,6 +42,7 @@ export default function App() {
             <Route element={<PublicRoute />}>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/connect-device" element={<ConnectDevice />} />
               
               {/* Default redirect to login */}
               <Route path="/" element={<Navigate to="/login" />} />
@@ -50,7 +51,7 @@ export default function App() {
             {/* Protected Routes (Dashboard) */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/connect-device" element={<ConnectDevice />} />
+              
             </Route>
           </Routes>
         </div>
