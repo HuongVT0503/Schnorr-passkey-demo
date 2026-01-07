@@ -43,7 +43,7 @@ router.get("/info/:linkId", async (req, res) => {
 
   await prisma.linkToken.update({
     where: { id: linkId },
-    data: { challenge }
+    data: { challenge },
   });
 
   return res.json({
@@ -66,15 +66,28 @@ router.post("/complete", async (req, res) => {
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Bad request" });
 
-  const { linkId, newPubKey, signature, deviceName, challenge } = parsed.data;
+  const { linkId, newPubKey, signature, deviceName } = parsed.data;
 
-  //validate linktoken
-  const link = await prisma.linkToken.findUnique({ where: { id: linkId } });
+  //immeately delete link
+  let link;
+  try {
+    link = await prisma.linkToken.delete({
+      where: { id: linkId },
+    });
+  } catch (err) {
+    // P2025 (Prisma): Record to delete does not exist
+    return res
+      .status(400)
+      .json({ error: "Link expired, invalid, or already used." });
+  }
+
   if (!link || link.expiresAt < new Date()) {
     return res.status(400).json({ error: "Link expired" });
   }
   if (!link.challenge) {
-    return res.status(400).json({ error: "Link flow invalid (no challenge set)" });
+    return res
+      .status(400)
+      .json({ error: "Link flow invalid (no challenge set)" });
   }
 
   //Verify Signature: new device signs (Challenge + linkId)
@@ -103,9 +116,6 @@ router.post("/complete", async (req, res) => {
       name: deviceName || "Backup Device",
     },
   });
-
-  //DEL used token
-  await prisma.linkToken.delete({ where: { id: linkId } });
 
   return res.json({ ok: true });
 });
