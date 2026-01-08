@@ -79,4 +79,9 @@ export const authApi = {
     challenge: string;
     deviceName: string;
   }) => api.post("/link/complete", data),
+
+  checkLinkStatus: (linkId: string) => api.get(`/link/status/${linkId}`),
+
+  approveDevice: (deviceId: string, linkId: string) =>
+    api.post("/link/approve", { deviceId, linkId }),
 };

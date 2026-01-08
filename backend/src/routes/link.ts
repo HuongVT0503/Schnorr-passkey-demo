@@ -69,20 +69,23 @@ router.post("/complete", async (req, res) => {
   const { linkId, newPubKey, signature, deviceName } = parsed.data;
 
   //immeately delete link
-  let link;
-  try {
-    link = await prisma.linkToken.delete({
-      where: { id: linkId },
-    });
-  } catch (err) {
-    // P2025 (Prisma): Record to delete does not exist
-    return res
-      .status(400)
-      .json({ error: "Link expired, invalid, or already used." });
-  }
+  // let link;
+  // try {
+  //   link = await prisma.linkToken.delete({
+  //     where: { id: linkId },
+  //   });
+  // } catch (err) {
+  //   // P2025 (Prisma): Record to delete does not exist
+  //   return res
+  //     .status(400)
+  //     .json({ error: "Link expired, invalid, or already used." });
+  // }
+  const link = await prisma.linkToken.findUnique({
+    where: { id: linkId },
+  });
 
   if (!link || link.expiresAt < new Date()) {
-    return res.status(400).json({ error: "Link expired" });
+    return res.status(400).json({ error: "Link expired or invalid" });
   }
   if (!link.challenge) {
     return res
@@ -114,8 +117,73 @@ router.post("/complete", async (req, res) => {
       userId: link.userId,
       pubKey: newPubKey,
       name: deviceName || "Backup Device",
+      status: "PENDING",
     },
   });
+
+  return res.json({ ok: true });
+});
+
+router.get("/status/:linkId", authSession, async (req, res) => {
+  const { linkId } = req.params;
+  const userId = (req as any).userId;
+
+  if (!linkId) {
+    return res.status(400).json({ error: "Missing linkId parameter" });
+  }
+
+  const link = await prisma.linkToken.findUnique({ where: { id: linkId } });
+  if (!link || link.userId !== userId)
+    return res.status(404).json({ error: "Link not found" });
+
+  const pendingDevice = await prisma.device.findFirst({
+    where: {
+      userId,
+      status: "PENDING",
+      createdAt: { gt: link.createdAt },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!pendingDevice) {
+    return res.json({ status: "waiting" });
+  }
+
+  return res.json({
+    status: "needs_approval",
+    device: {
+      id: pendingDevice.id,
+      name: pendingDevice.name,
+      pubKey: pendingDevice.pubKey,
+    },
+  });
+});
+
+//approval
+router.post("/approve", authSession, async (req, res) => {
+  const schema = z.object({
+    deviceId: z.string(),
+    linkId: z.string(),
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Bad Request" });
+  const { deviceId, linkId } = parsed.data;
+  const userId = (req as any).userId;
+
+  //activate device
+  const update = await prisma.device.updateMany({
+    where: { id: deviceId, userId, status: "PENDING" },
+    data: { status: "ACTIVE" },
+  });
+
+  if (update.count === 0)
+    return res
+      .status(404)
+      .json({ error: "Device not found or already active" });
+
+  //delete link after approval
+  await prisma.linkToken.deleteMany({ where: { id: linkId } });
 
   return res.json({ ok: true });
 });

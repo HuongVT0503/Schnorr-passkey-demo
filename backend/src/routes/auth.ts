@@ -136,10 +136,14 @@ router.post("/login/complete", async (req, res) => {
     where: { id: pending.userRef },
     include: { devices: true },
   });
+
+  const activeDevices =
+    user?.devices.filter((d) => d.status === "ACTIVE") ?? [];
+
   if (!user || user.username !== username)
     return res.status(400).json({ error: "user mismatch" });
-  if (user.devices.length === 0)
-    return res.status(400).json({ error: "no devices registered" });
+  if (activeDevices.length === 0)
+    return res.status(400).json({ error: "no active devices registered" });
 
   const msgBytes = new TextEncoder().encode(
     pending.challenge + "auth" + config.rpId
@@ -148,9 +152,9 @@ router.post("/login/complete", async (req, res) => {
   let verifiedDevice = null;
 
   if (config.allowInsecureSignatures) {
-    verifiedDevice = user.devices[0];
+    verifiedDevice = activeDevices[0];
   } else {
-    for (const device of user.devices) {
+    for (const device of activeDevices) {
       try {
         const isValid = await verifySchnorrSignature(
           device.pubKey,

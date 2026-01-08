@@ -23,6 +23,7 @@ model Device {
   userId    String
   pubKey    String   //Schnorr pubkey unique to device
   name      String?  //Chrome? Edge? etc
+  status    String   @default("ACTIVE")  //ACTIVE|PENDING
   createdAt DateTime @default(now())
 
   sessions  Session[]

@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { authApi, Device } from "../api";
 import { useState, useEffect } from "react";
 //import { clearKey } from '../lib/schnorrClient';
+import QRCode from "react-qr-code";
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
@@ -11,10 +12,62 @@ export default function DashboardPage() {
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [loadingDevs, setLoadingDevs] = useState(true);
+  const [pendingDevice, setPendingDevice] = useState<{
+    id: string;
+    name: string;
+    pubKey: string;
+  } | null>(null);
 
   useEffect(() => {
-    loadDevices();
+    loadDevices(); //initial load
+
+    const interval = setInterval(() => {
+      loadDevices();
+    }, 5000); //every 5s
+
+    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (linkUrl && !pendingDevice) {
+      const urlObj = new URL(linkUrl);
+      const linkId = urlObj.searchParams.get("linkId");
+
+      if (linkId) {
+        interval = setInterval(async () => {
+          try {
+            const res = await authApi.checkLinkStatus(linkId);
+            if (res.data.status === "needs_approval") {
+              setPendingDevice(res.data.device);
+              clearInterval(interval); //stop polling once found
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }, 2000); // every 2s
+      }
+    }
+    return () => clearInterval(interval);
+  }, [linkUrl, pendingDevice]);
+
+  const handleApprove = async () => {
+    if (!pendingDevice || !linkUrl) return;
+    const urlObj = new URL(linkUrl);
+    const linkId = urlObj.searchParams.get("linkId");
+    if (!linkId) return;
+
+    try {
+      await authApi.approveDevice(pendingDevice.id, linkId);
+      alert("Device Approved!");
+      setLinkUrl(null); //Close
+      setPendingDevice(null);
+      loadDevices(); //Refresh list
+    } catch (e) {
+      console.error(e);
+      alert("Error approving device");
+    }
+  };
 
   const loadDevices = async () => {
     try {
@@ -97,7 +150,7 @@ export default function DashboardPage() {
 
       <div className="mb-8">
         <h3 className="text-lg text-blue-400 mb-4 font-bold flex items-center">
-          Trusted Devices: 
+          Trusted Devices:
           <span className="ml-2 text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full">
             {devices.length}
           </span>
@@ -146,26 +199,70 @@ export default function DashboardPage() {
         </button>
       ) : (
         <div className="bg-gray-900 p-4 rounded mb-6 break-all border border-purple-500 relative">
-          <p className="text-xs text-purple-400 mb-2 font-bold uppercase tracking-wider">
-            Magic Link Generated
-          </p>
-          <a
-            href={linkUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-400 text-sm hover:underline block mb-2 font-mono"
-          >
-            {linkUrl}
-          </a>
-          <p className="text-xs text-gray-500">
-            Open this link on another device to add it to your trusted list.
-          </p>
           <button
-            onClick={() => setLinkUrl(null)}
+            onClick={() => {
+              setLinkUrl(null);
+              setPendingDevice(null);
+            }}
             className="absolute top-2 right-2 text-gray-500 hover:text-white"
           >
             ✕
           </button>
+
+          {!pendingDevice ? (
+            <>
+              <p className="text-xs text-purple-400 mb-4 font-bold uppercase tracking-wider">
+                Scan with New Device
+              </p>
+
+              <div className="bg-white p-3 rounded-lg mb-4">
+                <QRCode
+                  value={linkUrl}
+                  size={180}
+                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                  viewBox={`0 0 256 256`}
+                />
+              </div>
+
+              <p className="text-gray-400 text-xs mb-1">Or copy link:</p>
+              <a
+                href={linkUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-400 text-sm hover:underline block mb-2 font-mono break-all text-center"
+              >
+                {linkUrl}
+              </a>
+
+              <div className="mt-2 flex justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+              </div>
+            </>
+          ) : (
+            <div className="text-center animate-in fade-in zoom-in">
+              <h4 className="text-green-400 font-bold text-lg mb-2">
+                New Device Detected!
+              </h4>
+              <div className="bg-gray-800 p-3 rounded border border-gray-600 mb-4 text-left">
+                <p>
+                  <span className="text-gray-400">Name:</span>{" "}
+                  {pendingDevice.name}
+                </p>
+                <p>
+                  <span className="text-gray-400">Fingerprint:</span>
+                  <code className="bg-black px-1 rounded ml-2 text-yellow-300">
+                    {pendingDevice.pubKey.slice(0, 8).toUpperCase()}...
+                  </code>
+                </p>
+              </div>
+              <button
+                onClick={handleApprove}
+                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded shadow-lg transition-transform transform active:scale-95"
+              >
+                Approve Connection
+              </button>
+            </div>
+          )}
         </div>
       )}
 
