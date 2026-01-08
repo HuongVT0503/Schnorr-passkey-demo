@@ -170,7 +170,7 @@ router.post("/login/complete", async (req, res) => {
   if (!verifiedDevice)
     return res.status(401).json({ error: "bad signature (device not found)" });
 
-  const token = await createSession(user.id);
+  const token = await createSession(user.id, verifiedDevice.id);
   // secure cookie options: ensure secure:true in prod (https)
   res.cookie("session", token, {
     httpOnly: true,

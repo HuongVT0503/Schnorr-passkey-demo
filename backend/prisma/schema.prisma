@@ -24,6 +24,8 @@ model Device {
   pubKey    String   //Schnorr pubkey unique to device
   name      String?  //Chrome? Edge? etc
   createdAt DateTime @default(now())
+
+  sessions  Session[]
 }
 
 model LinkToken {
@@ -43,4 +45,7 @@ model Session {
   userId    String
   createdAt DateTime @default(now())
   expiresAt DateTime
+
+  device    Device?  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  deviceId  String?
 }

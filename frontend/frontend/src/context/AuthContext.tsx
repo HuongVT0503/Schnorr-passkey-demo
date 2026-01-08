@@ -51,6 +51,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     checkSession();
+
+    const interval = setInterval(() => {
+      authApi.getMe() //if logged in
+        .then(res => setUser(res.data))
+        .catch(() => setUser(null)); 
+    }, 2000); //poll every 2s
+
+    //cleanup on unmount
+    return () => clearInterval(interval);
   }, []);
 
   return (

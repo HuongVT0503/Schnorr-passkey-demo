@@ -97,7 +97,7 @@ export default function DashboardPage() {
 
       <div className="mb-8">
         <h3 className="text-lg text-blue-400 mb-4 font-bold flex items-center">
-          Trusted Devices
+          Trusted Devices: 
           <span className="ml-2 text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full">
             {devices.length}
           </span>

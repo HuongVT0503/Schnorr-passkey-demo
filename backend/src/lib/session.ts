@@ -10,7 +10,7 @@ type SessionPayload = {  //from db, jwt payload
 //create a db backed session
 //return a signed jwt token
 //the token is what putted in "session" cookie
-export async function createSession(userId: string): Promise<string> {
+export async function createSession(userId: string, deviceId: string): Promise<string> {
   const now = new Date();
   //ensure sessionLifetimeMs valid
   if (!Number.isFinite(config.sessionLifetimeMs) || config.sessionLifetimeMs <= 0) {
@@ -22,6 +22,7 @@ export async function createSession(userId: string): Promise<string> {
   const session = await prisma.session.create({
     data: {
       userId,
+      deviceId,
       expiresAt,
     },
   });
