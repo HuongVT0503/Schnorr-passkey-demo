@@ -7,9 +7,7 @@ import { hmac } from "@noble/hashes/hmac";
 //import { schnorr } from '@noble/curves/secp256k1.js'; //newer than @noble/secp256k1
 //import * as bip39 from "bip39";
 import { Buffer } from "buffer";
-import {hkdf} from '@noble/hashes/hkdf'; 
-
-
+import { hkdf } from "@noble/hashes/hkdf";
 
 //polyfill buffer for browser   to use hex conversion
 window.Buffer = window.Buffer || Buffer;
@@ -19,20 +17,20 @@ window.Buffer = window.Buffer || Buffer;
 ////wire up hashing for browser env
 //because @noble/secp256k1 v1.7 doesn't support a hasher?
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(secp.utils as any).hmacSha256Sync = (key: Uint8Array, ...msgs: Uint8Array[]) => 
+(secp.utils as any).hmacSha256Sync = (key: Uint8Array, ...msgs: Uint8Array[]) =>
   hmac(sha256, key, secp.utils.concatBytes(...msgs));
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(secp.utils as any).sha256Sync = (...msgs: Uint8Array[]) => 
+(secp.utils as any).sha256Sync = (...msgs: Uint8Array[]) =>
   sha256(secp.utils.concatBytes(...msgs));
 
 // export function generateMnemonic(): string {
-//   return bip39.generateMnemonic(128); 
+//   return bip39.generateMnemonic(128);
 // }
 
 //
 // export async function derivePrivateKey(mnemonic: string, username: string, rpId: string): Promise<string> {
-//   const seed = await bip39.mnemonicToSeed(mnemonic); 
+//   const seed = await bip39.mnemonicToSeed(mnemonic);
 
 //   const mix = username + rpId;
 //   const mixBytes = new TextEncoder().encode(mix);
@@ -47,19 +45,25 @@ window.Buffer = window.Buffer || Buffer;
 
 //
 export function getPublicKey(privKeyHex: string): string {
-  const privBytes = Buffer.from(privKeyHex, 'hex');
+  const privBytes = Buffer.from(privKeyHex, "hex");
   const pubKey = secp.schnorr.getPublicKey(privBytes);
-  return Buffer.from(pubKey).toString('hex');
+  return Buffer.from(pubKey).toString("hex");
 }
 
 //
-export async function signMessage(privKeyHex: string, message: string): Promise<string> {
+export async function signMessage(
+  privKeyHex: string,
+  message: string
+): Promise<string> {
   const msgBytes = new TextEncoder().encode(message);
-  const privBytes = Buffer.from(privKeyHex, 'hex');
+
+  const msgHash = sha256(msgBytes);
+
+  const privBytes = Buffer.from(privKeyHex, "hex");
 
   // only @noble/curves handles the hashing automatically
-  const sig = await secp.schnorr.sign(msgBytes, privBytes);
-  return Buffer.from(sig).toString('hex');
+  const sig = await secp.schnorr.sign(msgHash, privBytes);
+  return Buffer.from(sig).toString("hex");
 }
 
 //
@@ -67,32 +71,35 @@ export async function signMessage(privKeyHex: string, message: string): Promise<
 // export function loadKey() { return localStorage.getItem(STORAGE_KEY); }
 //export function clearKey() { localStorage.removeItem(STORAGE_KEY); }
 
-
-
 //get PRF seed from ddevice (raw PRF ArrayBuffer (from webauthn)->hex string)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function prfToSeed(prfResults: any): string {
-  if (!prfResults || !prfResults.first) {  
-    throw new Error("Device did not return a PRF secret. PRF may not be supported.");
+  if (!prfResults || !prfResults.first) {
+    throw new Error(
+      "Device did not return a PRF secret. PRF may not be supported."
+    );
   }
-  return Buffer.from(new Uint8Array(prfResults.first)).toString('hex');//just use first 32 bytes
+  return Buffer.from(new Uint8Array(prfResults.first)).toString("hex"); //just use first 32 bytes
 }
 
 //derive Schnorr key from PRF seed (HKDF) (deterministic)
-export async function deriveKeyFromPrf(prfHex: string, username: string, rpId: string): Promise<string> {
+export async function deriveKeyFromPrf(
+  prfHex: string,
+  username: string,
+  rpId: string
+): Promise<string> {
   //input keying material (IKM): raw PRF output from hardware
-  const ikm = new Uint8Array(Buffer.from(prfHex, 'hex'));
+  const ikm = new Uint8Array(Buffer.from(prfHex, "hex"));
 
   const salt = new TextEncoder().encode(username);
 
-  const info = new TextEncoder().encode(`schnorr-passkey-v1|${rpId}`);  //context binding string (Relying Party ID + purpose)
+  const info = new TextEncoder().encode(`schnorr-passkey-v1|${rpId}`); //context binding string (Relying Party ID + purpose)
 
-  const outputLen = 32;  //32 bytes (256 bits): secp256k1 privkey
+  const outputLen = 32; //32 bytes (256 bits): secp256k1 privkey
 
   //HKDF (RFC 5869)
   // hkdf(hash, ikm, salt, info, length)
   const derivedBytes = hkdf(sha256, ikm, salt, info, outputLen);
 
-
-  return Buffer.from(derivedBytes).toString('hex');
+  return Buffer.from(derivedBytes).toString("hex");
 }
