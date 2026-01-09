@@ -1,6 +1,7 @@
 //challenge + rpId
 //pendning map
 import { randomBytes } from "crypto";
+import { prisma } from "../db/prisma";
 
 export function generateChallenge(): string {
   //32 bytes to 64 hex chars
@@ -10,71 +11,70 @@ export function generateChallenge(): string {
 type PendingRecord = {
   userRef: string;
   challenge: string; // hex string
-  salt?: string;
+  salt: string | null;
   exp: number; // timestamp (ms)
 };
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000; //5min
-const store = new Map<string, PendingRecord>();
+//const store = new Map<string, PendingRecord>();
 
 //Create a new pending challenge record (for register or login).
 //userRef: username or userId
 //registration: username
 //login: userId
-export function createPending(
+export async function createPending(
   userRef: string,
   salt?: string
-): {
-  id: string;
-  challenge: string;
-} {
+): Promise<{ id: string; challenge: string }> {
   const id = randomBytes(16).toString("hex");
   const challenge = generateChallenge();
+  const expiresAt = new Date(Date.now() + CHALLENGE_TTL_MS);
 
-  if (salt) {
-    store.set(id, {
+  await prisma.authChallenge.create({
+    data: {
+      id,
       userRef,
       challenge,
-      salt,
-      exp: Date.now() + CHALLENGE_TTL_MS,
-    });
-  }
+      salt: salt ?? null,
+      expiresAt,
+    },
+  });
 
   return { id, challenge };
 }
 
 //consume a pending challenge by id (SINGLE-USE)
 //null if not found or expired
-export function consumePending(id: string): PendingRecord | null {
-  const rec = store.get(id);
-  if (!rec) return null;
-
-  //always delete
-  store.delete(id);
-
-  if (rec.exp < Date.now()) {
+export async function consumePending(
+  id: string
+): Promise<PendingRecord | null> {
+  try {
+    //retrieve then delete
+    const record = await prisma.authChallenge.delete({
+      where: { id },
+    });
+    if (record.expiresAt < new Date()) {
+      return null;
+    }
+    return {
+      userRef: record.userRef,
+      challenge: record.challenge,
+      salt: record.salt,
+      exp: record.expiresAt.getTime(),
+    };
+  } catch (err) {
     return null;
   }
-
-  return rec;
 }
-
 //return a snapshot of current pending entries /for debug
-export function dumpPending(): Array<{
-  //routes/_debug.ts
-  id: string;
-  userRef: string;
-  challenge: string;
-  expiresAt: string;
-  expired: boolean;
-}> {
-  const now = Date.now();
-  return Array.from(store.entries()).map(([id, p]) => ({
-    id,
+export async function dumpPending() {
+  const records = await prisma.authChallenge.findMany();
+  return records.map((p) => ({
+    id: p.id,
     userRef: p.userRef,
     challenge: p.challenge,
-    expiresAt: new Date(p.exp).toISOString(),
-    expired: p.exp < now,
+    expiresAt: p.expiresAt.toISOString(),
+    expired: p.expiresAt < new Date(),
   }));
 }
 

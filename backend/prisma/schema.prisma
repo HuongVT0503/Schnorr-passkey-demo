@@ -51,3 +51,12 @@ model Session {
   device    Device?  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   deviceId  String?
 }
+
+model AuthChallenge {
+  id        String   @id
+  userRef   String   //username or userId
+  challenge String
+  salt      String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}

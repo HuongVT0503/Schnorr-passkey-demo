@@ -32,7 +32,7 @@ router.post("/register/init", async (req, res) => {
   const salt = randomBytes(32).toString("hex");
 
   // Use the username as userRef here; pending will contain the challenge and expiry
-  const { id, challenge } = createPending(username, salt);
+  const { id, challenge } = await createPending(username, salt);
   return res.json({ regId: id, rpId: config.rpId, challenge, salt });
 });
 
@@ -57,7 +57,7 @@ router.post("/register/complete", async (req, res) => {
 
   const { regId, username, pubKey, regSignature, clientData } = parsed.data;
 
-  const pending = consumePending(regId);
+  const pending = await consumePending(regId);
   if (!pending || pending.userRef !== username)
     return res.status(400).json({ error: "invalid or expired registration" });
   if (!pending.salt)
@@ -118,7 +118,7 @@ router.post("/login/init", async (req, res) => {
   const user = await prisma.user.findUnique({ where: { username } });
   if (!user) return res.status(404).json({ error: "user not found" });
 
-  const { id, challenge } = createPending(user.id); // store user.id as userRef
+  const { id, challenge } = await createPending(user.id); // store user.id as userRef
   return res.json({ loginId: id, challenge, salt: user.salt });
 });
 
@@ -134,7 +134,7 @@ router.post("/login/complete", async (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: "bad request" });
 
   const { loginId, username, signature } = parsed.data;
-  const pending = consumePending(loginId);
+  const pending = await consumePending(loginId);
   if (!pending)
     return res.status(400).json({ error: "invalid or expired login" });
 
