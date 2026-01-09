@@ -51,6 +51,9 @@ model Session {
 
   device    Device?  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   deviceId  String?
+
+  ipAddress String?
+  userAgent String?
 }
 
 model AuthChallenge {
