@@ -7,6 +7,7 @@ import { hmac } from "@noble/hashes/hmac";
 //import { schnorr } from '@noble/curves/secp256k1.js'; //newer than @noble/secp256k1
 //import * as bip39 from "bip39";
 import { Buffer } from "buffer";
+import {hkdf} from '@noble/hashes/hkdf'; 
 
 
 
@@ -77,14 +78,21 @@ export function prfToSeed(prfResults: any): string {
   return Buffer.from(new Uint8Array(prfResults.first)).toString('hex');//just use first 32 bytes
 }
 
-//derive Schnorr key from PRF seed (HKDF-style) (deterministic)
+//derive Schnorr key from PRF seed (HKDF) (deterministic)
 export async function deriveKeyFromPrf(prfHex: string, username: string, rpId: string): Promise<string> {
-  //input entropy: PRF output (used as entropy) + context (username + rpId)
-  const input = prfHex + "_schnorr_passkey_" + username + rpId;
-  
-  //hash to get 32-byte private key
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const hash = await (secp.utils as any).sha256Sync(new TextEncoder().encode(input)); //sha256(new TextEncoder().encode(input));
-  
-  return Buffer.from(hash).toString('hex');
+  //input keying material (IKM): raw PRF output from hardware
+  const ikm = new Uint8Array(Buffer.from(prfHex, 'hex'));
+
+  const salt = new TextEncoder().encode(username);
+
+  const info = new TextEncoder().encode(`schnorr-passkey-v1|${rpId}`);  //context binding string (Relying Party ID + purpose)
+
+  const outputLen = 32;  //32 bytes (256 bits): secp256k1 privkey
+
+  //HKDF (RFC 5869)
+  // hkdf(hash, ikm, salt, info, length)
+  const derivedBytes = hkdf(sha256, ikm, salt, info, outputLen);
+
+
+  return Buffer.from(derivedBytes).toString('hex');
 }
