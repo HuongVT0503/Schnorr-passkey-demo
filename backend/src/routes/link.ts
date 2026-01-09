@@ -4,6 +4,7 @@ import { prisma } from "../db/prisma";
 import { authSession } from "../middleware/authSession";
 import { verifySchnorrSignature } from "../lib/schnorr";
 import { config } from "../config";
+import { randomBytes } from "crypto";
 
 const router = Router();
 
@@ -14,21 +15,23 @@ router.post("/init", authSession, async (req, res) => {
   //token for 5 min
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
+  const token = randomBytes(32).toString("hex");
+
   const link = await prisma.linkToken.create({
-    data: { userId, expiresAt },
+    data: { userId, expiresAt, token },
   });
 
   //full url
-  const url = `${config.frontendOrigin}/connect-device?linkId=${link.id}`;
-  return res.json({ url, expiresAt });
+  const url = `${config.frontendOrigin}/connect-device?token=${token}`;
+  return res.json({ url, linkId: link.id,  expiresAt });
 });
 
 //GET LINK INFO (from new device when opening the link)
-router.get("/info/:linkId", async (req, res) => {
-  const { linkId } = req.params;
+router.get("/info/:token", async (req, res) => {
+  const { token } = req.params;
 
   const link = await prisma.linkToken.findUnique({
-    where: { id: linkId },
+    where: { token },
     include: { user: { select: { username: true, salt: true } } },
   });
 
@@ -42,7 +45,7 @@ router.get("/info/:linkId", async (req, res) => {
   );
 
   await prisma.linkToken.update({
-    where: { id: linkId },
+    where: { id: link.id }, 
     data: { challenge },
   });
 
@@ -57,7 +60,7 @@ router.get("/info/:linkId", async (req, res) => {
 //COMPLETE LINK (from new device: send new key + sig)
 router.post("/complete", async (req, res) => {
   const schema = z.object({
-    linkId: z.string(),
+    token: z.string(),
     newPubKey: z.string(),
     signature: z.string(),
     deviceName: z.string().optional(),
@@ -67,7 +70,7 @@ router.post("/complete", async (req, res) => {
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Bad request" });
 
-  const { linkId, newPubKey, signature, deviceName } = parsed.data;
+  const { token, newPubKey, signature, deviceName } = parsed.data;
 
   //immeately delete link
   // let link;
@@ -82,7 +85,7 @@ router.post("/complete", async (req, res) => {
   //     .json({ error: "Link expired, invalid, or already used." });
   // }
   const link = await prisma.linkToken.findUnique({
-    where: { id: linkId },
+    where: { token },
   });
 
   if (!link || link.expiresAt < new Date()) {
@@ -94,9 +97,9 @@ router.post("/complete", async (req, res) => {
       .json({ error: "Link flow invalid (no challenge set)" });
   }
 
-  //Verify Signature: new device signs (Challenge + linkId)
-  //linkId included to bind the sig to this transaction
-  const msgStr = link.challenge + linkId;
+  //Verify Signature: new device signs (Challenge + token)
+  //token included to bind the sig to this transaction // swapping attack
+  const msgStr = link.challenge + token;
   const msgBytes = new TextEncoder().encode(msgStr);
 
   let ok = false;

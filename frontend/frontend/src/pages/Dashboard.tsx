@@ -9,6 +9,7 @@ import QRCode from "react-qr-code";
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const [linkUrl, setLinkUrl] = useState<string | null>(null);
+  const [activeLinkId, setActiveLinkId] = useState<string | null>(null); //internal id (linkId)
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [loadingDevs, setLoadingDevs] = useState(true);
@@ -30,37 +31,31 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
-    if (linkUrl && !pendingDevice) {
-      const urlObj = new URL(linkUrl);
-      const linkId = urlObj.searchParams.get("linkId");
-
-      if (linkId) {
-        interval = setInterval(async () => {
-          try {
-            const res = await authApi.checkLinkStatus(linkId);
-            if (res.data.status === "needs_approval") {
-              setPendingDevice(res.data.device);
-              clearInterval(interval); //stop polling once found
-            }
-          } catch (e) {
-            console.error(e);
+    if (activeLinkId && !pendingDevice) {
+      interval = setInterval(async () => {
+        try {
+          const res = await authApi.checkLinkStatus(activeLinkId);
+          if (res.data.status === "needs_approval") {
+            setPendingDevice(res.data.device);
+            clearInterval(interval); //stop polling once found
           }
-        }, 5000); // every 5s
-      }
+        } catch (e) {
+          console.error(e);
+        }
+      }, 5000); // every 5s
     }
+
     return () => clearInterval(interval);
-  }, [linkUrl, pendingDevice]);
+  }, [activeLinkId, pendingDevice]);
 
   const handleApprove = async () => {
-    if (!pendingDevice || !linkUrl) return;
-    const urlObj = new URL(linkUrl);
-    const linkId = urlObj.searchParams.get("linkId");
-    if (!linkId) return;
+    if (!pendingDevice || !activeLinkId) return;
 
     try {
-      await authApi.approveDevice(pendingDevice.id, linkId);
+      await authApi.approveDevice(pendingDevice.id, activeLinkId);
       alert("Device Approved!");
       setLinkUrl(null); //Close
+      setActiveLinkId(null); //clear id
       setPendingDevice(null);
       loadDevices(); //Refresh list
     } catch (e) {
@@ -84,6 +79,7 @@ export default function DashboardPage() {
     try {
       const res = await authApi.initLink();
       setLinkUrl(res.data.url);
+      setActiveLinkId(res.data.linkId); //store internal id for polling
     } catch (err) {
       console.error(err);
       alert("Failed to create link");
@@ -202,6 +198,7 @@ export default function DashboardPage() {
           <button
             onClick={() => {
               setLinkUrl(null);
+              setActiveLinkId(null);
               setPendingDevice(null);
             }}
             className="absolute top-2 right-2 text-gray-500 hover:text-white"

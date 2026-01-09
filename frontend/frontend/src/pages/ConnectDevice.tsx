@@ -22,7 +22,7 @@ function getDeviceName(): string {
 
 export default function ConnectDevice() {
   const [searchParams] = useSearchParams();
-  const linkId = searchParams.get("linkId");
+  const token= searchParams.get("token");
   const navigate = useNavigate();
 
   const [info, setInfo] = useState<{
@@ -42,22 +42,22 @@ export default function ConnectDevice() {
   const [myPubKey, setMyPubKey] = useState("");
 
   useEffect(() => {
-    if (!linkId) {
+    if (!token){
       setError("Invalid Link");
       return;
     }
 
     authApi
-      .getLinkInfo(linkId)
+      .getLinkInfo(token)
       .then((res) => {
         setInfo(res.data);
         setStatus("");
       })
       .catch(() => setError("Link expired or invalid"));
-  }, [linkId]);
+  }, [token]);
 
   const handleConnect = async () => {
-    if (!info || !linkId) return;
+    if (!info || !token) return;
     setStatus("Registering Hardware...");
 
     const finalName = customName.trim() || getDeviceName();
@@ -102,11 +102,11 @@ export default function ConnectDevice() {
       const pubKey = getPublicKey(privKey);
 
       //Sign Link Proof (Challenge + linkId)
-      const msg = info.challenge + linkId;
+      const msg = info.challenge + token;
       const signature = await signMessage(privKey, msg);
 
       await authApi.completeLink({
-        linkId,
+        token,
         newPubKey: pubKey,
         signature,
         challenge: info.challenge,

@@ -70,10 +70,10 @@ export const authApi = {
   //Linking
   initLink: () => api.post("/link/init"), //return{ url, expiresAt }
 
-  getLinkInfo: (linkId: string) => api.get(`/link/info/${linkId}`),
+  getLinkInfo: (token: string) => api.get(`/link/info/${token}`),
 
   completeLink: (data: {
-    linkId: string;
+    token: string;
     newPubKey: string;
     signature: string;
     challenge: string;
