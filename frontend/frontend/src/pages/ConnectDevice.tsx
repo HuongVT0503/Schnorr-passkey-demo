@@ -9,7 +9,6 @@ import {
   signMessage,
 } from "../lib/schnorrClient";
 
-const PRF_SALT = "Fixed_Salt_For_Demo";
 
 function getDeviceName(): string {
   const ua = navigator.userAgent;
@@ -25,18 +24,21 @@ export default function ConnectDevice() {
   const [searchParams] = useSearchParams();
   const linkId = searchParams.get("linkId");
   const navigate = useNavigate();
-  
+
   const [info, setInfo] = useState<{
     username: string;
     challenge: string;
     rpId: string;
+    salt: string;
   } | null>(null);
-  
+
   const [status, setStatus] = useState("Verifying Link...");
   const [error, setError] = useState("");
   const [customName, setCustomName] = useState("");
-  
-  const [approvalState, setApprovalState] = useState<"idle" | "waiting">("idle");
+
+  const [approvalState, setApprovalState] = useState<"idle" | "waiting">(
+    "idle"
+  );
   const [myPubKey, setMyPubKey] = useState("");
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export default function ConnectDevice() {
 
     try {
       const userIdBytes = new TextEncoder().encode(info.username);
-      
+
       const newCredential = await startRegistration({
         optionsJSON: {
           challenge: btoa(info.challenge),
@@ -82,9 +84,9 @@ export default function ConnectDevice() {
             userVerification: "required",
           },
           extensions: {
-            prf: { eval: { first: new TextEncoder().encode(PRF_SALT) } },
+            prf: { eval: { first: new TextEncoder().encode(info.salt) } },
           },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
       });
 
@@ -111,11 +113,10 @@ export default function ConnectDevice() {
         deviceName: finalName,
       });
 
-      
       setMyPubKey(pubKey);
       setApprovalState("waiting");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error(err);
       setStatus("Error: " + err.message);
@@ -139,29 +140,33 @@ export default function ConnectDevice() {
   if (approvalState === "waiting") {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
-         <div className="bg-gray-800 p-8 rounded shadow-lg max-w-md w-full border border-yellow-500 text-center">
-            <h2 className="text-2xl text-yellow-400 font-bold mb-4">Verification Required</h2>
-            <p className="text-gray-300 mb-6">
-              Please check your main device. Confirm that the fingerprint code below matches:
+        <div className="bg-gray-800 p-8 rounded shadow-lg max-w-md w-full border border-yellow-500 text-center">
+          <h2 className="text-2xl text-yellow-400 font-bold mb-4">
+            Verification Required
+          </h2>
+          <p className="text-gray-300 mb-6">
+            Please check your main device. Confirm that the fingerprint code
+            below matches:
+          </p>
+
+          <div className="bg-black p-4 rounded mb-6 border border-gray-700">
+            <p className="text-xs text-gray-500 mb-1">DEVICE FINGERPRINT</p>
+            <p className="text-2xl font-mono text-yellow-300 tracking-widest break-all">
+              {myPubKey.slice(0, 8).toUpperCase()}
             </p>
-            
-            <div className="bg-black p-4 rounded mb-6 border border-gray-700">
-              <p className="text-xs text-gray-500 mb-1">DEVICE FINGERPRINT</p>
-              <p className="text-2xl font-mono text-yellow-300 tracking-widest break-all">
-                 {myPubKey.slice(0, 8).toUpperCase()}
-              </p>
-            </div>
-  
-            <p className="text-sm text-gray-400">
-              Once approved, you can proceed to login.
-            </p>
-            
-            <button
-              onClick={() => navigate("/login")}
-              className="mt-6 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded">
-              I Have Been Approved &rarr; Login
-            </button>
-         </div>
+          </div>
+
+          <p className="text-sm text-gray-400">
+            Once approved, you can proceed to login.
+          </p>
+
+          <button
+            onClick={() => navigate("/login")}
+            className="mt-6 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded"
+          >
+            I Have Been Approved &rarr; Login
+          </button>
+        </div>
       </div>
     );
   }

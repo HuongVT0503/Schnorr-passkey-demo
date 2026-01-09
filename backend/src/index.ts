@@ -4,12 +4,12 @@ import app from "./app";
 import { config } from "./config";
 import { prisma } from "./db/prisma";
 
-//clean any acc after 24h from registering point
+//clean any acc after 72h from registering point
 const CLEANUP_INTERVAL_MS = 1000 * 60 * 60 ;//check every 1h
 
 async function cleanup() {
   const now = new Date();
-  const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const cutoff = new Date(now.getTime() - 3* 24 * 60 * 60 * 1000);
 
   try{
     

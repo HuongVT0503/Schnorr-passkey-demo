@@ -11,6 +11,7 @@ model User {
   id        String   @id @default(cuid())
   username  String   @unique
   //pubKey    String                      //hex-encoded Schnorr public key
+  salt      String
   createdAt DateTime @default(now())
   sessions  Session[]
   devices   Device[]

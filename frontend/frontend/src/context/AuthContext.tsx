@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authApi.getMe() //if logged in
         .then(res => setUser(res.data))
         .catch(() => setUser(null)); 
-    }, 2000); //poll every 2s
+    }, 5000); //poll every 5s 
 
     //cleanup on unmount
     return () => clearInterval(interval);

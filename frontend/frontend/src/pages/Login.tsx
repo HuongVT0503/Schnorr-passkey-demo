@@ -5,12 +5,12 @@ import { useAuth } from "../context/AuthContext";
 import { prfToSeed, deriveKeyFromPrf, signMessage } from "../lib/schnorrClient";
 import { startAuthentication } from "@simplewebauthn/browser";
 
-const PRF_SALT = "Fixed_Salt_For_Demo"; //matches registration salt
 
 //shape of the login init response
 interface LoginInitResponse {
   loginId: string;
   challenge: string;
+  salt: string;
 }
 
 //error shape
@@ -32,7 +32,7 @@ export default function LoginPage() {
     try {
       //init
       const initRes = await authApi.loginInit(username);
-      const { loginId, challenge } = initRes.data as LoginInitResponse;
+      const { loginId, challenge, salt } = initRes.data as LoginInitResponse;
 
       setStatus("Veryfying Identity...");
 
@@ -48,11 +48,11 @@ export default function LoginPage() {
           extensions: {
             prf: {
               eval: {
-                first: new TextEncoder().encode(PRF_SALT),
+                first: new TextEncoder().encode(salt),
               },
             },
           },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
       });
 

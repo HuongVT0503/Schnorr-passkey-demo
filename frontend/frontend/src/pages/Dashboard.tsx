@@ -45,7 +45,7 @@ export default function DashboardPage() {
           } catch (e) {
             console.error(e);
           }
-        }, 2000); // every 2s
+        }, 5000); // every 5s
       }
     }
     return () => clearInterval(interval);

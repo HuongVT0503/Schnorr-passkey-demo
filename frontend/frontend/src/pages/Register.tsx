@@ -11,12 +11,12 @@ import {
 import { startRegistration } from "@simplewebauthn/browser";
 import { bufferToBase64URLString } from "@simplewebauthn/browser";
 
-const PRF_SALT = "Fixed_Salt_For_Demo";
 
 interface RegisterInitResponse {
   regId: string;
   rpId: string;
   challenge: string;
+  salt: string;
 }
 
 interface ApiError {
@@ -38,11 +38,14 @@ export default function RegisterPage() {
     try {
       //init, get challenge and rpId from be
       const initRes = await authApi.registerInit(username);
-      const { regId, rpId, challenge } = initRes.data as RegisterInitResponse;
+      const { regId, rpId, challenge, salt } =
+        initRes.data as RegisterInitResponse;
 
       setStatus("Generating Keys...");
 
-      const userIdBase64 = bufferToBase64URLString(new TextEncoder().encode(username).buffer);
+      const userIdBase64 = bufferToBase64URLString(
+        new TextEncoder().encode(username).buffer
+      );
 
       //START WEBAUTHN REGISTRATION WITH PRF
       //minimal creation opt obj
@@ -68,11 +71,11 @@ export default function RegisterPage() {
           extensions: {
             prf: {
               eval: {
-                first: new TextEncoder().encode(PRF_SALT), //FIXED SALT (demo)
+                first: new TextEncoder().encode(salt),
               },
             },
           },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
       }); ///
 

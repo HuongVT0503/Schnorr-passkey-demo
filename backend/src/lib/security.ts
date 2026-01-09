@@ -1,4 +1,4 @@
-//challenge + rpId 
+//challenge + rpId
 //pendning map
 import { randomBytes } from "crypto";
 
@@ -8,35 +8,40 @@ export function generateChallenge(): string {
 }
 
 type PendingRecord = {
-  userRef: string;     
+  userRef: string;
   challenge: string; // hex string
-  exp: number;       // timestamp (ms)
+  salt?: string;
+  exp: number; // timestamp (ms)
 };
 
-const CHALLENGE_TTL_MS = 5 * 60 * 1000;       //5min
+const CHALLENGE_TTL_MS = 5 * 60 * 1000; //5min
 const store = new Map<string, PendingRecord>();
-
 
 //Create a new pending challenge record (for register or login).
 //userRef: username or userId
 //registration: username
 //login: userId
-export function createPending(userRef: string): {
+export function createPending(
+  userRef: string,
+  salt?: string
+): {
   id: string;
   challenge: string;
 } {
   const id = randomBytes(16).toString("hex");
   const challenge = generateChallenge();
 
-  store.set(id, {
-    userRef,
-    challenge,
-    exp: Date.now() + CHALLENGE_TTL_MS,
-  });
+  if (salt) {
+    store.set(id, {
+      userRef,
+      challenge,
+      salt,
+      exp: Date.now() + CHALLENGE_TTL_MS,
+    });
+  }
 
   return { id, challenge };
 }
-
 
 //consume a pending challenge by id (SINGLE-USE)
 //null if not found or expired
@@ -54,10 +59,9 @@ export function consumePending(id: string): PendingRecord | null {
   return rec;
 }
 
-
-
 //return a snapshot of current pending entries /for debug
-export function dumpPending(): Array<{//routes/_debug.ts
+export function dumpPending(): Array<{
+  //routes/_debug.ts
   id: string;
   userRef: string;
   challenge: string;
@@ -74,11 +78,8 @@ export function dumpPending(): Array<{//routes/_debug.ts
   }));
 }
 
-
-
 //In /register/init:    createPending(username)
 //In /register/complete: consumePending(regId)
 //In /login/init:          createPending(user.id)
 //In /login/complete:      consumePending(loginId)
 //
-

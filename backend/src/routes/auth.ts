@@ -7,6 +7,7 @@ import { verifySchnorrSignature } from "../lib/schnorr";
 import { createPending, consumePending } from "../lib/security";
 import { config } from "../config";
 import { ms } from "zod/v4/locales";
+import { randomBytes } from "crypto";
 
 //Zod is a TypeScript-first validation library that allows you to define schemas for data validation, ensuring type safety and integrity in your applications.
 
@@ -28,9 +29,11 @@ router.post("/register/init", async (req, res) => {
   const exists = await prisma.user.findUnique({ where: { username } });
   if (exists) return res.status(409).json({ error: "username taken" });
 
+  const salt = randomBytes(32).toString("hex");
+
   // Use the username as userRef here; pending will contain the challenge and expiry
-  const { id, challenge } = createPending(username);
-  return res.json({ regId: id, rpId: config.rpId, challenge });
+  const { id, challenge } = createPending(username, salt);
+  return res.json({ regId: id, rpId: config.rpId, challenge, salt });
 });
 
 //register complete
@@ -57,6 +60,8 @@ router.post("/register/complete", async (req, res) => {
   const pending = consumePending(regId);
   if (!pending || pending.userRef !== username)
     return res.status(400).json({ error: "invalid or expired registration" });
+  if (!pending.salt)
+    return res.status(500).json({ error: "Registration state missing salt" });
 
   if (
     clientData.challenge !== pending.challenge ||
@@ -89,6 +94,7 @@ router.post("/register/complete", async (req, res) => {
     await prisma.user.create({
       data: {
         username,
+        salt: pending.salt,
         devices: {
           create: { pubKey, name: "Primary Device" },
         },
@@ -113,7 +119,7 @@ router.post("/login/init", async (req, res) => {
   if (!user) return res.status(404).json({ error: "user not found" });
 
   const { id, challenge } = createPending(user.id); // store user.id as userRef
-  return res.json({ loginId: id, challenge });
+  return res.json({ loginId: id, challenge, salt: user.salt });
 });
 
 //login complete

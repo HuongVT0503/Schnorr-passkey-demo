@@ -29,7 +29,7 @@ router.get("/info/:linkId", async (req, res) => {
 
   const link = await prisma.linkToken.findUnique({
     where: { id: linkId },
-    include: { user: { select: { username: true } } },
+    include: { user: { select: { username: true, salt: true } } },
   });
 
   if (!link || link.expiresAt < new Date()) {
@@ -49,6 +49,7 @@ router.get("/info/:linkId", async (req, res) => {
   return res.json({
     username: link.user.username,
     challenge,
+    salt: link.user.salt,
     rpId: config.rpId,
   });
 });
