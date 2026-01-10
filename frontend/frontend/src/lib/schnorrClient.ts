@@ -1,13 +1,14 @@
 //PROVER
 //wallet/key manager
 // frontend/src/lib/schnorrClient.ts
-import * as secp from "@noble/secp256k1";
+import { schnorr } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@noble/hashes/sha256";
-import { hmac } from "@noble/hashes/hmac";
+//import { hmac } from "@noble/hashes/hmac";
 //import { schnorr } from '@noble/curves/secp256k1.js'; //newer than @noble/secp256k1
 //import * as bip39 from "bip39";
 import { Buffer } from "buffer";
 import { hkdf } from "@noble/hashes/hkdf";
+import { randomBytes } from "@noble/hashes/utils";
 
 //polyfill buffer for browser   to use hex conversion
 window.Buffer = window.Buffer || Buffer;
@@ -16,15 +17,14 @@ window.Buffer = window.Buffer || Buffer;
 
 ////wire up hashing for browser env
 //because @noble/secp256k1 v1.7 doesn't support a hasher?
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(secp.utils as any).hmacSha256Sync = (key: Uint8Array, ...msgs: Uint8Array[]) =>
-  hmac(sha256, key, secp.utils.concatBytes(...msgs));
+// (secp.utils as any).hmacSha256Sync = (key: Uint8Array, ...msgs: Uint8Array[]) =>
+//   hmac(sha256, key, secp.utils.concatBytes(...msgs));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(secp.utils as any).sha256Sync = (...msgs: Uint8Array[]) =>
-  sha256(secp.utils.concatBytes(...msgs));
+// // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// (secp.utils as any).sha256Sync = (...msgs: Uint8Array[]) =>
+//   sha256(secp.utils.concatBytes(...msgs));
 
-// export function generateMnemonic(): string {
+// // export function generateMnemonic(): string {
 //   return bip39.generateMnemonic(128);
 // }
 
@@ -43,11 +43,15 @@ window.Buffer = window.Buffer || Buffer;
 //   return Buffer.from(privBytes).toString('hex');
 // }
 
+function toHex(bytes: Uint8Array): string {
+  return Buffer.from(bytes).toString("hex");
+}
+
 //
 export function getPublicKey(privKeyHex: string): string {
   const privBytes = Buffer.from(privKeyHex, "hex");
-  const pubKey = secp.schnorr.getPublicKey(privBytes);
-  return Buffer.from(pubKey).toString("hex");
+  const pubKey = schnorr.getPublicKey(privBytes);
+  return toHex(pubKey.slice(1));
 }
 
 //
@@ -61,9 +65,12 @@ export async function signMessage(
 
   const privBytes = Buffer.from(privKeyHex, "hex");
 
+  //HEDGED SIG
+  const auxRand = randomBytes(32); //auxiliary random bytes
   // only @noble/curves handles the hashing automatically
-  const sig = await secp.schnorr.sign(msgHash, privBytes);
-  return Buffer.from(sig).toString("hex");
+  const sig = schnorr.sign(msgHash, privBytes, auxRand);
+  //await secp.schnorr.sign(msgHash, privBytes);
+  return toHex(sig);
 }
 
 //

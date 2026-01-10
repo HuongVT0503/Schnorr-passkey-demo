@@ -19,7 +19,6 @@
   "type": "commonjs",
   "dependencies": {
     "@noble/curves": "^2.0.1",
-    "@noble/secp256k1": "^1.7.1",
     "@prisma/client": "^5.22.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
