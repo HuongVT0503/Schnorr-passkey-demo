@@ -40,7 +40,7 @@ router.get("/info/:token", async (req, res) => {
   }
 
   //send rand challenge to new device
-  const challenge = await import("../lib/security").then((m) =>
+  const challenge = await import("../lib/security.js").then((m) =>
     m.generateChallenge()
   );
 
