@@ -9,10 +9,10 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "commonjs",//"nodenext",
+    "module": "NodeNext",//"nodenext",
     "target": "ES2020",  //"esnext",
 
-     "moduleResolution": "Node",
+     "moduleResolution": "NodeNext",
     //"types": [],                          //
     // For nodejs:
     "lib": ["es2021"],

@@ -6,7 +6,7 @@ import { createHash } from "crypto";
 //Use the namespace import when you also need other top-level APIs or runtime configuration (for example to set hashes / enable synchronous methods, or to access utils, Point, etc.):
 //{schnorr} import would only import schnorr.keygen/sign/verify (async)
 
-import { schnorr } from "@noble/curves/secp256k1";
+import { schnorr } from "@noble/curves/secp256k1.js";
 
 //utf8 string to Uint8Array
 // function utf8ToBytes(s: string): Uint8Array {
