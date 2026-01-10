@@ -51,7 +51,7 @@ function toHex(bytes: Uint8Array): string {
 export function getPublicKey(privKeyHex: string): string {
   const privBytes = Buffer.from(privKeyHex, "hex");
   const pubKey = schnorr.getPublicKey(privBytes);
-  return toHex(pubKey.slice(1));
+  return toHex(pubKey);
 }
 
 //
