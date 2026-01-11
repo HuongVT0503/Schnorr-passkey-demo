@@ -20,32 +20,33 @@ export default function DashboardPage() {
   } | null>(null);
 
   useEffect(() => {
-    loadDevices(); //initial load
+    if (!activeLinkId || pendingDevice) return;
 
-    const interval = setInterval(() => {
-      loadDevices();
-    }, 5000); //every 5s
+    //withCredentials: true is required to send the session cookie
+    const sse = new EventSource(`/api/link/status/${activeLinkId}/stream`, {
+      withCredentials: true,
+    });
 
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (activeLinkId && !pendingDevice) {
-      interval = setInterval(async () => {
-        try {
-          const res = await authApi.checkLinkStatus(activeLinkId);
-          if (res.data.status === "needs_approval") {
-            setPendingDevice(res.data.device);
-            clearInterval(interval); //stop polling once found
-          }
-        } catch (e) {
-          console.error(e);
+    sse.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.status === "needs_approval") {
+          setPendingDevice(data.device);
+          sse.close(); //stop once found the device
         }
-      }, 5000); // every 5s
-    }
+      } catch (err) {
+        console.error("SSE Parse Error", err);
+      }
+    };
 
-    return () => clearInterval(interval);
+    sse.onerror = (err) => {
+      console.error("SSE Error (Connection closed by server or network issue)", err);
+      sse.close();
+    };
+
+    return () => {
+      sse.close();
+    };
   }, [activeLinkId, pendingDevice]);
 
   const handleApprove = async () => {

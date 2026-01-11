@@ -5,8 +5,10 @@ import { authSession } from "../middleware/authSession";
 import { verifySchnorrSignature } from "../lib/schnorr";
 import { config } from "../config";
 import { randomBytes } from "crypto";
+import { EventEmitter } from "events";
 
 const router = Router();
+const linkEmitter = new EventEmitter();
 
 //GENERATE LINK (from main device/ first devuce/ nning device)
 router.post("/init", authSession, async (req, res) => {
@@ -116,7 +118,7 @@ router.post("/complete", async (req, res) => {
   if (!ok) return res.status(400).json({ error: "Invalid signature" });
 
   //save new device
-  await prisma.device.create({
+  const newDevice = await prisma.device.create({
     data: {
       userId: link.userId,
       pubKey: newPubKey,
@@ -125,7 +127,62 @@ router.post("/complete", async (req, res) => {
     },
   });
 
+  linkEmitter.emit(link.id, {
+    status: "needs_approval",
+    device: {
+      id: newDevice.id,
+      name: newDevice.name,
+      pubKey: newDevice.pubKey,
+    },
+  });
+
   return res.json({ ok: true });
+});
+
+//SSE for dashboard
+router.get("/status/:linkId/stream", authSession, async (req, res) => {
+  const { linkId } = req.params;
+  const userId = (req as any).userId;
+
+  if (!linkId) {
+    return res.status(400).json({ error: "Missing linkId" });
+  }
+
+  try {
+    const link = await prisma.linkToken.findUnique({
+      where: { id: linkId },
+    });
+
+    if (!link || link.userId !== userId) {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized access to this link" });
+    }
+  } catch (err) {
+    console.error("SSE Database Error", err);
+    return res.status(500).end();
+  }
+
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+  });
+
+  const heartbeat = setInterval(() => {
+    res.write(": heartbeat\n\n");
+  }, 15000); //15s
+
+  const onDeviceConnected = (data: any) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  linkEmitter.on(linkId, onDeviceConnected);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    linkEmitter.removeListener(linkId, onDeviceConnected);
+  });
 });
 
 router.get("/status/:linkId", authSession, async (req, res) => {
