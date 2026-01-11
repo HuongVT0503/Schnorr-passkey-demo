@@ -8,7 +8,7 @@ import { sha256 } from "@noble/hashes/sha256";
 //import * as bip39 from "bip39";
 import { Buffer } from "buffer";
 import { hkdf } from "@noble/hashes/hkdf";
-import { randomBytes } from "@noble/hashes/utils";
+//import { randomBytes } from "@noble/hashes/utils";
 
 //polyfill buffer for browser   to use hex conversion
 window.Buffer = window.Buffer || Buffer;
@@ -66,9 +66,9 @@ export async function signMessage(
   const privBytes = Buffer.from(privKeyHex, "hex");
 
   //HEDGED SIG
-  const auxRand = randomBytes(32); //auxiliary random bytes
+  /////const auxRand = randomBytes(32); //auxiliary random bytes
   // only @noble/curves handles the hashing automatically
-  const sig = schnorr.sign(msgBytes, privBytes, auxRand);
+  const sig = schnorr.sign(msgBytes, privBytes);
   //await secp.schnorr.sign(msgHash, privBytes);
   return toHex(sig);
 }
