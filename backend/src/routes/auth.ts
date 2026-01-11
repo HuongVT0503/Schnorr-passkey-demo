@@ -101,6 +101,9 @@ router.post("/register/complete", async (req, res) => {
       },
     });
   } catch (err: any) {
+    if (err.code === "P2002") {
+      return res.status(409).json({ error: "Username already taken" });
+    }
     // race or uniqueness error
     return res.status(500).json({ error: "db error", detail: err.message });
   }

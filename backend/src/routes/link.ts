@@ -23,7 +23,7 @@ router.post("/init", authSession, async (req, res) => {
 
   //full url
   const url = `${config.frontendOrigin}/connect-device?token=${token}`;
-  return res.json({ url, linkId: link.id,  expiresAt });
+  return res.json({ url, linkId: link.id, expiresAt });
 });
 
 //GET LINK INFO (from new device when opening the link)
@@ -45,7 +45,7 @@ router.get("/info/:token", async (req, res) => {
   );
 
   await prisma.linkToken.update({
-    where: { id: link.id }, 
+    where: { id: link.id },
     data: { challenge },
   });
 
@@ -175,21 +175,32 @@ router.post("/approve", authSession, async (req, res) => {
   const { deviceId, linkId } = parsed.data;
   const userId = (req as any).userId;
 
-  //activate device
-  const update = await prisma.device.updateMany({
-    where: { id: deviceId, userId, status: "PENDING" },
-    data: { status: "ACTIVE" },
-  });
+  try {
+    //wrap operations in a transaction (atomicity)
+    await prisma.$transaction(async (tx) => {
+      const update = await tx.device.updateMany({
+        where: { id: deviceId, userId, status: "PENDING" },
+        data: { status: "ACTIVE" },
+      }); //activate device
 
-  if (update.count === 0)
+      //if no device updated, throw error to rollback transaction
+      if (update.count === 0) {
+        throw new Error("Device not found or already active");
+      }
+
+      //delete linktoken if update succeeded
+      await tx.linkToken.deleteMany({ where: { id: linkId } });
+    });
+    return res.json({ ok: true });
+  } catch (err: any) {
+    if (err.message === "Device not found or already active") {
+      return res.status(404).json({ error: err.message });
+    }
+    console.error("Approval transaction failed:", err);
     return res
-      .status(404)
-      .json({ error: "Device not found or already active" });
-
-  //delete link after approval
-  await prisma.linkToken.deleteMany({ where: { id: linkId } });
-
-  return res.json({ ok: true });
+      .status(500)
+      .json({ error: "Internal server error during approval" });
+  }
 });
 
 export default router;

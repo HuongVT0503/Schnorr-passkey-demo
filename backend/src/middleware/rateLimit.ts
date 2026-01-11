@@ -13,7 +13,7 @@ export const apiLimiter = rateLimit({
 //auth limit 30 req/1min per IP
 export const authLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 30,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many auth attempts, please try again later." },
