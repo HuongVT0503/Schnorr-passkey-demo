@@ -5,7 +5,6 @@ import { useAuth } from "../context/AuthContext";
 import { prfToSeed, deriveKeyFromPrf, signMessage } from "../lib/schnorrClient";
 import { startAuthentication } from "@simplewebauthn/browser";
 
-
 //shape of the login init response
 interface LoginInitResponse {
   loginId: string;
@@ -28,6 +27,8 @@ export default function LoginPage() {
   const doLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("Initializing Login...");
+
+    let privKey: Uint8Array | null = null;
 
     try {
       //init
@@ -67,11 +68,7 @@ export default function LoginPage() {
 
       //re-derive
       const seedHex = prfToSeed(prfResult.results);
-      const privKey = await deriveKeyFromPrf(
-        seedHex,
-        salt,
-        window.location.hostname
-      );
+      privKey = await deriveKeyFromPrf(seedHex, salt, window.location.hostname);
 
       //sign & send
       //matches backend logic (challenge + "auth" + rpId)
@@ -94,6 +91,11 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const error = err as ApiError;
       setStatus("Error: " + (error.response?.data?.error || error.message));
+    } finally {
+      //wipe priv key from memory immediately
+      if (privKey) {
+        privKey.fill(0);
+      }
     }
   };
 

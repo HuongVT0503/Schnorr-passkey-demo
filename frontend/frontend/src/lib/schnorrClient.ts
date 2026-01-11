@@ -48,27 +48,28 @@ function toHex(bytes: Uint8Array): string {
 }
 
 //
-export function getPublicKey(privKeyHex: string): string {
-  const privBytes = Buffer.from(privKeyHex, "hex");
-  const pubKey = schnorr.getPublicKey(privBytes);
+export function getPublicKey(privKeyBytes: Uint8Array): string {
+  //const privBytes = Buffer.from(privKeyHex, "hex");
+  //schnrr.getPublicKey habdles uint8atrray
+  const pubKey = schnorr.getPublicKey(privKeyBytes);
   return toHex(pubKey);
 }
 
 //
 export async function signMessage(
-  privKeyHex: string,
+  privKeyBytes: Uint8Array,
   message: string
 ): Promise<string> {
   const msgBytes = new TextEncoder().encode(message);
 
  //const msgHash = sha256(msgBytes);
 
-  const privBytes = Buffer.from(privKeyHex, "hex");
+  //const privBytes = Buffer.from(privKeyHex, "hex");
 
   //HEDGED SIG
   /////const auxRand = randomBytes(32); //auxiliary random bytes
   // only @noble/curves handles the hashing automatically
-  const sig = schnorr.sign(msgBytes, privBytes);
+  const sig = schnorr.sign(msgBytes, privKeyBytes);
   //await secp.schnorr.sign(msgHash, privBytes);
   return toHex(sig);
 }
@@ -94,7 +95,7 @@ export async function deriveKeyFromPrf(
   prfHex: string,
   saltHex: string,
   rpId: string
-): Promise<string> {
+): Promise<Uint8Array> {
   //input keying material (IKM): raw PRF output from hardware
   const ikm = new Uint8Array(Buffer.from(prfHex, "hex"));
 
@@ -106,7 +107,7 @@ export async function deriveKeyFromPrf(
 
   //HKDF (RFC 5869)
   // hkdf(hash, ikm, salt, info, length)
-  const derivedBytes = hkdf(sha256, ikm, salt, info, outputLen);
+  return hkdf(sha256, ikm, salt, info, outputLen);
 
-  return Buffer.from(derivedBytes).toString("hex");
+  //return Buffer.from(derivedBytes).toString("hex");
 }

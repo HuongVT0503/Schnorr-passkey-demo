@@ -11,7 +11,6 @@ import {
 import { startRegistration } from "@simplewebauthn/browser";
 import { bufferToBase64URLString } from "@simplewebauthn/browser";
 
-
 interface RegisterInitResponse {
   regId: string;
   rpId: string;
@@ -34,6 +33,8 @@ export default function RegisterPage() {
   const doRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("Initializing Registration...");
+
+    let privKey: Uint8Array | null = null;
 
     try {
       //init, get challenge and rpId from be
@@ -98,7 +99,7 @@ export default function RegisterPage() {
       //raw hardware secret (seed) -> Schnorr keypair
       const seedHex = prfToSeed(prfResult.results);
 
-      const privKey = await deriveKeyFromPrf(seedHex, salt, rpId);
+      privKey = await deriveKeyFromPrf(seedHex, salt, rpId);
       const pubKey = getPublicKey(privKey);
 
       const msg = challenge + rpId;
@@ -124,6 +125,10 @@ export default function RegisterPage() {
       console.error(err);
       const error = err as ApiError;
       setStatus("Error: " + (error.response?.data?.error || error.message));
+    } finally {
+      if (privKey) {
+        privKey.fill(0);
+      }
     }
   };
 

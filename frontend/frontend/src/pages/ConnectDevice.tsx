@@ -9,7 +9,6 @@ import {
   signMessage,
 } from "../lib/schnorrClient";
 
-
 function getDeviceName(): string {
   const ua = navigator.userAgent;
   if (/Windows/i.test(ua)) return "Windows PC";
@@ -22,7 +21,7 @@ function getDeviceName(): string {
 
 export default function ConnectDevice() {
   const [searchParams] = useSearchParams();
-  const token= searchParams.get("token");
+  const token = searchParams.get("token");
   const navigate = useNavigate();
 
   const [info, setInfo] = useState<{
@@ -42,7 +41,7 @@ export default function ConnectDevice() {
   const [myPubKey, setMyPubKey] = useState("");
 
   useEffect(() => {
-    if (!token){
+    if (!token) {
       setError("Invalid Link");
       return;
     }
@@ -61,6 +60,8 @@ export default function ConnectDevice() {
     setStatus("Registering Hardware...");
 
     const finalName = customName.trim() || getDeviceName();
+
+    let privKey: Uint8Array | null = null;
 
     try {
       const userIdBytes = new TextEncoder().encode(info.username);
@@ -98,7 +99,7 @@ export default function ConnectDevice() {
 
       const seedHex = prfToSeed(prfResult.results);
       //derive key using USERNAME from link info to ensure it matches the account
-      const privKey = await deriveKeyFromPrf(seedHex, info.salt, info.rpId);
+      privKey = await deriveKeyFromPrf(seedHex, info.salt, info.rpId);
       const pubKey = getPublicKey(privKey);
 
       //Sign Link Proof (Challenge + linkId)
@@ -120,6 +121,10 @@ export default function ConnectDevice() {
     } catch (err: any) {
       console.error(err);
       setStatus("Error: " + err.message);
+    } finally {
+      if (privKey) {
+        privKey.fill(0);
+      }
     }
   };
 
