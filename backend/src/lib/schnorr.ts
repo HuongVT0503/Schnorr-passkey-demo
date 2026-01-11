@@ -1,6 +1,6 @@
 //VERIFIER
 //serversidde lib
-import { createHash } from "crypto";
+//import { createHash } from "crypto";
 //import * as secp from "@noble/secp256k1"; //import the whole module// namespace import
 //import { schnorr } from "@noble/secp256k1";//named export
 //Use the namespace import when you also need other top-level APIs or runtime configuration (for example to set hashes / enable synchronous methods, or to access utils, Point, etc.):
@@ -55,8 +55,8 @@ export async function verifySchnorrSignature(
       // } else {
       msgBytes = message;
     }
-    const msgHashBuffer = createHash("sha256").update(msgBytes).digest();
-    const msgHash = new Uint8Array(msgHashBuffer);
+    // const msgHashBuffer = createHash("sha256").update(msgBytes).digest();
+    // const msgHash = new Uint8Array(msgHashBuffer);
     //const sigBytes = hexToBytes(sigHex);
     // const pubBytes = hexToBytes(pubKeyHex);
     // if (typeof sigHex !== "string" || sigHex.length < 128) return false;//length 64 bytes->128hex chars
@@ -93,7 +93,7 @@ export async function verifySchnorrSignature(
     const pubBytes = hexToBytes(cleanPub);
 
     //noble Schnorr can take hex strings for pubKey n sig
-    return schnorr.verify(sigBytes, msgHash, pubBytes);
+    return schnorr.verify(sigBytes, msgBytes, pubBytes);
   } catch (err) {
     console.error("Schnorr verify failed:", err);
     return false;

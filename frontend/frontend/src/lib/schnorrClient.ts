@@ -61,14 +61,14 @@ export async function signMessage(
 ): Promise<string> {
   const msgBytes = new TextEncoder().encode(message);
 
-  const msgHash = sha256(msgBytes);
+ //const msgHash = sha256(msgBytes);
 
   const privBytes = Buffer.from(privKeyHex, "hex");
 
   //HEDGED SIG
   const auxRand = randomBytes(32); //auxiliary random bytes
   // only @noble/curves handles the hashing automatically
-  const sig = schnorr.sign(msgHash, privBytes, auxRand);
+  const sig = schnorr.sign(msgBytes, privBytes, auxRand);
   //await secp.schnorr.sign(msgHash, privBytes);
   return toHex(sig);
 }
