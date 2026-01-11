@@ -92,13 +92,13 @@ export function prfToSeed(prfResults: any): string {
 //derive Schnorr key from PRF seed (HKDF) (deterministic)
 export async function deriveKeyFromPrf(
   prfHex: string,
-  username: string,
+  saltHex: string,
   rpId: string
 ): Promise<string> {
   //input keying material (IKM): raw PRF output from hardware
   const ikm = new Uint8Array(Buffer.from(prfHex, "hex"));
 
-  const salt = new TextEncoder().encode(username);
+  const salt = new Uint8Array(Buffer.from(saltHex, "hex"));
 
   const info = new TextEncoder().encode(`schnorr-passkey-v1|${rpId}`); //context binding string (Relying Party ID + purpose)
 

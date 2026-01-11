@@ -98,7 +98,7 @@ export default function RegisterPage() {
       //raw hardware secret (seed) -> Schnorr keypair
       const seedHex = prfToSeed(prfResult.results);
 
-      const privKey = await deriveKeyFromPrf(seedHex, username, rpId);
+      const privKey = await deriveKeyFromPrf(seedHex, salt, rpId);
       const pubKey = getPublicKey(privKey);
 
       const msg = challenge + rpId;

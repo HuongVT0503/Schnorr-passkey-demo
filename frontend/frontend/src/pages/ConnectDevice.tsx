@@ -98,7 +98,7 @@ export default function ConnectDevice() {
 
       const seedHex = prfToSeed(prfResult.results);
       //derive key using USERNAME from link info to ensure it matches the account
-      const privKey = await deriveKeyFromPrf(seedHex, info.username, info.rpId);
+      const privKey = await deriveKeyFromPrf(seedHex, info.salt, info.rpId);
       const pubKey = getPublicKey(privKey);
 
       //Sign Link Proof (Challenge + linkId)

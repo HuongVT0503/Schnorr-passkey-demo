@@ -69,7 +69,7 @@ export default function LoginPage() {
       const seedHex = prfToSeed(prfResult.results);
       const privKey = await deriveKeyFromPrf(
         seedHex,
-        username,
+        salt,
         window.location.hostname
       );
 
