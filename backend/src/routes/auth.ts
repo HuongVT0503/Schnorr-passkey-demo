@@ -118,11 +118,25 @@ router.post("/login/init", async (req, res) => {
     return res.status(400).json({ error: "invalid username" });
   const username = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { username } });
-  if (!user) return res.status(404).json({ error: "user not found" });
+  let user = await prisma.user.findUnique({ where: { username } });
 
-  const { id, challenge } = await createPending(user.id); // store user.id as userRef
-  return res.json({ loginId: id, challenge, salt: user.salt });
+  //User Enumeration
+  //user not exist-> generate fake data + delay resp
+  let targetSalt = user?.salt;
+  let targetId = user?.id;
+
+  if (!user) {
+    targetSalt = randomBytes(32).toString("hex");
+    targetId = "dummy_" + randomBytes(8).toString("hex");
+
+    //Timing Attack
+    //add random jitter (50-150ms)
+    const jitter = Math.floor(Math.random() * 100) + 50;
+    await new Promise((resolve) => setTimeout(resolve, jitter));
+  }
+
+  const { id, challenge } = await createPending(targetId!, targetSalt); // store user.id as userRef
+  return res.json({ loginId: id, challenge, salt: targetSalt });
 });
 
 //login complete

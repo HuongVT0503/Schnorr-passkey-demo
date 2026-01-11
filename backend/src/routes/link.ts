@@ -22,7 +22,7 @@ router.post("/init", authSession, async (req, res) => {
   });
 
   //full url
-  const url = `${config.frontendOrigin}/connect-device?token=${token}`;
+  const url = `${config.frontendOrigin}/connect-device#token=${token}`;
   return res.json({ url, linkId: link.id, expiresAt });
 });
 

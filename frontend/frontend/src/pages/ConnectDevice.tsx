@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { authApi } from "../api";
 import { startRegistration } from "@simplewebauthn/browser";
 import {
@@ -20,9 +20,18 @@ function getDeviceName(): string {
 }
 
 export default function ConnectDevice() {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
+  const location = useLocation();
+  //const [searchParams] = useSearchParams();
+  //const token = searchParams.get("token");
   const navigate = useNavigate();
+
+  const [token, setToken] = useState<string | null>(null);
+  useEffect(() => {
+    const hash = location.hash;
+    if (hash.startsWith("#token=")) {
+      setToken(hash.split("#token=")[1]);
+    }
+  }, [location]);
 
   const [info, setInfo] = useState<{
     username: string;
@@ -156,8 +165,12 @@ export default function ConnectDevice() {
 
           <div className="bg-black p-4 rounded mb-6 border border-gray-700">
             <p className="text-xs text-gray-500 mb-1">DEVICE FINGERPRINT</p>
-            <p className="text-2xl font-mono text-yellow-300 tracking-widest break-all">
-              {myPubKey.slice(0, 8).toUpperCase()}
+            <p className="text-xl font-mono text-yellow-300 tracking-wider break-all">
+              {myPubKey
+                .slice(0, 20)
+                .toUpperCase()
+                .match(/.{1,4}/g)
+                ?.join("-")}
             </p>
           </div>
 
